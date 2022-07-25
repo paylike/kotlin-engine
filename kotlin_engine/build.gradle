@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.5.30'
     id 'maven-publish'
 }
 
@@ -8,7 +9,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        minSdk 26
+        minSdk 30
         targetSdk 32
     }
 
@@ -29,7 +30,8 @@ android {
 dependencies {
     testImplementation 'junit:junit:4.13.2'
 
-
+    implementation 'com.github.paylike:kotlin_luhn:1.0.5'
+    implementation 'com.github.paylike:kotlin_client:1.0.0'
 }
 
 afterEvaluate {
