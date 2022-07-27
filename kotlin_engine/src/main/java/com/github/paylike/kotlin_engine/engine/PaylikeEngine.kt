@@ -19,7 +19,6 @@ import com.github.paylike.kotlin_request.exceptions.PaylikeException
 import java.util.function.Consumer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.runBlocking
 
 /**
  */
@@ -28,15 +27,14 @@ class PaylikeEngine {
         this.repository = EngineRepository(PaymentIntegrationDto(clientId))
         this.apiService = PaylikeClient()
         this.apiMode = apiMode
-        if (this.apiMode == ApiMode.TEST)
-        this.repository.testConfig = PaymentTestDto()
+        if (this.apiMode == ApiMode.TEST) this.repository.testConfig = PaymentTestDto()
     }
 
     private var currentState: EngineState = EngineState.WAITING_FOR_INPUT
 
     private val error: PaylikeEngineError? = null
 
-    private val repository: EngineRepository
+    val repository: EngineRepository
 
     private val apiMode: ApiMode
 
@@ -44,8 +42,10 @@ class PaylikeEngine {
 
     private val log: Consumer<Any> = Consumer { println(it.toString()) }
 
-    suspend fun tokenize(cardNumber: String, cvc: String, month: Int, year: Int): PaylikeCardDto {
-        if (!PaylikeLuhn.isValid(cardNumber) && apiMode == ApiMode.LIVE) { // TODO ez a plusz feltetel kell?
+    suspend fun tokenize(cardNumber: String, cvc: String, month: Int, year: Int) {
+        if (
+            !PaylikeLuhn.isValid(cardNumber) && apiMode == ApiMode.LIVE
+        ) { // TODO ez a plusz feltetel kell?
             throw InvalidCardNumberException()
         }
         val paylikeCardDto: PaylikeCardDto
@@ -53,25 +53,21 @@ class PaylikeEngine {
             val cardNumberToken = async {
                 apiService.tokenize(TokenizeData(TokenizeTypes.PCN, cardNumber))
             }
-            val cvcToken = async {
-                apiService.tokenize(TokenizeData(TokenizeTypes.PCSC, cvc))
-            }
+            val cvcToken = async { apiService.tokenize(TokenizeData(TokenizeTypes.PCSC, cvc)) }
             paylikeCardDto =
                 PaylikeCardDto(cardNumberToken.await(), cvcToken.await(), ExpiryDto(month, year))
         }
-        return paylikeCardDto
+        repository.cardRepository = paylikeCardDto
     }
 
-    suspend fun startPayment(
-        paymentData: PaymentData,
-        paymentTestDto: PaymentTestDto?
-    ) {
+    suspend fun startPayment(paymentData: PaymentData, paymentTestDto: PaymentTestDto?) {
         try {
-            val response = if (paymentTestDto == null && apiMode == ApiMode.TEST) {
-                payment(paymentData, repository.testConfig)
-            } else {
-                payment(paymentData, paymentTestDto)
-            }
+            val response =
+                if (paymentTestDto == null && apiMode == ApiMode.TEST) {
+                    payment(paymentData, repository.testConfig)
+                } else {
+                    payment(paymentData, paymentTestDto)
+                }
             repository.paymentRepository = paymentData
             repository.cardRepository = paymentData.card
             repository.hintsRepository.plus(response.paymentResponse.hints)
@@ -84,7 +80,6 @@ class PaylikeEngine {
                 currentState = EngineState.SUCCESS
                 repository.transactionId = response.paymentResponse.transactionId
             }
-
         } catch (e: PaylikeException) {
             log.accept("An API exception happened: ${e.code} ${e.cause}")
             currentState = EngineState.ERROR
@@ -94,7 +89,6 @@ class PaylikeEngine {
             currentState = EngineState.ERROR
             // TODO set error
         }
-
     }
 
     suspend fun continuePayment() {}
@@ -109,17 +103,18 @@ class PaylikeEngine {
     ): PaylikeClientResponse {
         val response: PaylikeClientResponse
         coroutineScope {
-            response = when (apiMode) {
-                ApiMode.LIVE -> {
-                    apiService.paymentCreate(paymentData)
-                }
-                ApiMode.TEST -> {
-                    if (paymentTestDto == null) {
-                        throw InvalidPaymentBodyException("No PaymentTestDto is provided.")
+            response =
+                when (apiMode) {
+                    ApiMode.LIVE -> {
+                        apiService.paymentCreate(paymentData)
                     }
-                    apiService.paymentCreate(paymentData.copy(test = paymentTestDto))
+                    ApiMode.TEST -> {
+                        if (paymentTestDto == null) {
+                            throw InvalidPaymentBodyException("No PaymentTestDto is provided.")
+                        }
+                        apiService.paymentCreate(paymentData.copy(test = paymentTestDto))
+                    }
                 }
-            }
         }
         return response
     }
