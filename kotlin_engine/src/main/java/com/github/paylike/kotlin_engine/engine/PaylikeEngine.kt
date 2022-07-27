@@ -7,6 +7,7 @@ import com.github.paylike.kotlin_client.domain.dto.payment.request.card.PaylikeC
 import com.github.paylike.kotlin_client.domain.dto.payment.request.integration.PaymentIntegrationDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
 import com.github.paylike.kotlin_client.domain.dto.payment.response.PaylikeClientResponse
+import com.github.paylike.kotlin_client.domain.dto.payment.response.PaymentResponse
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeData
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeTypes
 import com.github.paylike.kotlin_engine.PaylikeEngineError
@@ -91,9 +92,45 @@ class PaylikeEngine {
         }
     }
 
-    suspend fun continuePayment() {}
+    suspend fun continuePayment() {
+        try {
+            val resp: PaylikeClientResponse
+            if (repository.paymentRepository != null) {
+                resp = apiService.paymentCreate(repository.paymentRepository!!)
+                repository.hintsRepository.plus(resp.paymentResponse.hints)
+            } else {
+                throw Exception("Engine does not have required information to continue payment")
+            }
+            if (resp.isHTML) {
+                if (currentState == EngineState.WEBVIEW_CHALLENGE_REQUIRED) {
+                    currentState = EngineState.WEBVIEW_CHALLENGE_STARTED
 
-    suspend fun finishPayment() {}
+                } else {
+                    throw Exception("Engine state invalid $currentState")
+                }
+            } else {
+                if (!resp.paymentResponse.transactionId.isNullOrEmpty()) {
+                    currentState = EngineState.SUCCESS
+                    repository.transactionId = resp.paymentResponse.transactionId
+                } else {
+                    throw Exception("Unexpected payment challenge failure")
+                }
+            }
+        } catch (e: PaylikeException) {
+            log.accept("An API exception happened: ${e.code} ${e.cause}")
+            currentState = EngineState.ERROR
+            // TODO set error
+        } catch (e: Exception) {
+            log.accept("An internal exception happened: $e")
+            currentState = EngineState.ERROR
+            // TODO set error
+        }
+        // TODO notify listeners, event trigger
+    }
+
+    suspend fun finishPayment() {
+
+    }
 
     suspend fun restartPayment() {}
 
