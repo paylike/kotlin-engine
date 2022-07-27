@@ -1,0 +1,11 @@
+<resources>
+
+    <style name="Theme.Kotlin_engine.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.Kotlin_engine.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.Kotlin_engine.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+</resources>
