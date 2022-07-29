@@ -16,14 +16,15 @@ import com.github.paylike.kotlin_engine.model.repository.EngineRepository
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
+import java.util.*
 import java.util.function.Consumer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import java.util.*
 
 /**
  */
-class PaylikeEngine: Observable { // TODO if its not working then try https://in-kotlin.com/design-patterns/observer/
+class PaylikeEngine :
+    Observable { // TODO if its not working then try https://in-kotlin.com/design-patterns/observer/
     constructor(clientId: String, apiMode: ApiMode) {
         this.repository = EngineRepository(PaymentIntegrationDto(clientId))
         this.apiService = PaylikeClient()
@@ -66,8 +67,7 @@ class PaylikeEngine: Observable { // TODO if its not working then try https://in
             val response =
                 if (paymentTestDto == null && apiMode == ApiMode.TEST) {
                     payment(paymentData, repository.testConfig)
-                } else
-                {
+                } else {
                     payment(paymentData, paymentTestDto)
                 }
             repository.paymentRepository = paymentData
@@ -137,7 +137,7 @@ class PaylikeEngine: Observable { // TODO if its not working then try https://in
                 throw Exception("Engine does not have required information to continue payment")
             }
             if (resp.isHTML) {
-                throw Exception("Should not be HTML anymore");
+                throw Exception("Should not be HTML anymore")
             } else {
                 repository.transactionId = resp.paymentResponse.transactionId
                 currentState = EngineState.SUCCESS
