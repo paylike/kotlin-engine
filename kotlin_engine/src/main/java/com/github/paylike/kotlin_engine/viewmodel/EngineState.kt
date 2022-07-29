@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.engine
+package com.github.paylike.kotlin_engine.viewmodel
 
 enum class EngineState {
     WAITING_FOR_INPUT,

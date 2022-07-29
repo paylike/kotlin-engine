@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.repository
+package com.github.paylike.kotlin_engine.model.repository
 
 import com.github.paylike.kotlin_client.domain.dto.payment.request.PaymentData
 import com.github.paylike.kotlin_client.domain.dto.payment.request.card.PaylikeCardDto
@@ -10,7 +10,7 @@ data class EngineRepository(
     var cardRepository: PaylikeCardDto? = null,
     var paymentRepository: PaymentData? = null,
     var htmlRepository: String? = null,
-    val hintsRepository: List<String> = mutableListOf(),
+    val hintsRepository: MutableList<String> = mutableListOf(),
     var transactionId: String? = null,
     var testConfig: PaymentTestDto? = null,
 )

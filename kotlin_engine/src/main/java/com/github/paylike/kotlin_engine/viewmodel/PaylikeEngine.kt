@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.engine
+package com.github.paylike.kotlin_engine.viewmodel
 
 import com.github.paylike.kotlin_client.PaylikeClient
 import com.github.paylike.kotlin_client.domain.dto.payment.request.PaymentData
@@ -7,23 +7,23 @@ import com.github.paylike.kotlin_client.domain.dto.payment.request.card.PaylikeC
 import com.github.paylike.kotlin_client.domain.dto.payment.request.integration.PaymentIntegrationDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
 import com.github.paylike.kotlin_client.domain.dto.payment.response.PaylikeClientResponse
-import com.github.paylike.kotlin_client.domain.dto.payment.response.PaymentResponse
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeData
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeTypes
-import com.github.paylike.kotlin_engine.PaylikeEngineError
-import com.github.paylike.kotlin_engine.exceptions.InvalidCardNumberException
-import com.github.paylike.kotlin_engine.exceptions.InvalidPaymentBodyException
-import com.github.paylike.kotlin_engine.repository.EngineRepository
-import com.github.paylike.kotlin_engine.service.ApiMode
+import com.github.paylike.kotlin_engine.helper.PaylikeEngineError
+import com.github.paylike.kotlin_engine.helper.exceptions.InvalidCardNumberException
+import com.github.paylike.kotlin_engine.helper.exceptions.InvalidPaymentBodyException
+import com.github.paylike.kotlin_engine.model.repository.EngineRepository
+import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
 import java.util.function.Consumer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import java.util.*
 
 /**
  */
-class PaylikeEngine {
+class PaylikeEngine: Observable { // TODO if its not working then try https://in-kotlin.com/design-patterns/observer/
     constructor(clientId: String, apiMode: ApiMode) {
         this.repository = EngineRepository(PaymentIntegrationDto(clientId))
         this.apiService = PaylikeClient()
@@ -66,7 +66,8 @@ class PaylikeEngine {
             val response =
                 if (paymentTestDto == null && apiMode == ApiMode.TEST) {
                     payment(paymentData, repository.testConfig)
-                } else {
+                } else
+                {
                     payment(paymentData, paymentTestDto)
                 }
             repository.paymentRepository = paymentData
@@ -76,7 +77,6 @@ class PaylikeEngine {
             if (response.isHTML) {
                 currentState = EngineState.WEBVIEW_CHALLENGE_REQUIRED
                 repository.htmlRepository = response.htmlBody
-                // TODO set event for challenge request begining
             } else {
                 currentState = EngineState.SUCCESS
                 repository.transactionId = response.paymentResponse.transactionId
@@ -90,6 +90,7 @@ class PaylikeEngine {
             currentState = EngineState.ERROR
             // TODO set error
         }
+        this.notifyObservers()
     }
 
     suspend fun continuePayment() {
@@ -104,7 +105,6 @@ class PaylikeEngine {
             if (resp.isHTML) {
                 if (currentState == EngineState.WEBVIEW_CHALLENGE_REQUIRED) {
                     currentState = EngineState.WEBVIEW_CHALLENGE_STARTED
-
                 } else {
                     throw Exception("Engine state invalid $currentState")
                 }
@@ -125,14 +125,44 @@ class PaylikeEngine {
             currentState = EngineState.ERROR
             // TODO set error
         }
-        // TODO notify listeners, event trigger
+        this.notifyObservers()
     }
 
     suspend fun finishPayment() {
-
+        try {
+            val resp: PaylikeClientResponse
+            if (repository.cardRepository != null) {
+                resp = apiService.paymentCreate(repository.paymentRepository!!)
+            } else {
+                throw Exception("Engine does not have required information to continue payment")
+            }
+            if (resp.isHTML) {
+                throw Exception("Should not be HTML anymore");
+            } else {
+                repository.transactionId = resp.paymentResponse.transactionId
+                currentState = EngineState.SUCCESS
+            }
+        } catch (e: PaylikeException) {
+            log.accept("An API exception happened: ${e.code} ${e.cause}")
+            currentState = EngineState.ERROR
+            // TODO set error
+        } catch (e: Exception) {
+            log.accept("An internal exception happened: $e")
+            currentState = EngineState.ERROR
+            // TODO set error
+        }
+        this.notifyObservers()
     }
 
-    suspend fun restartPayment() {}
+    fun resetPaymentFlow() {
+        repository.hintsRepository.clear()
+        repository.cardRepository = null
+        repository.paymentRepository = null
+        repository.htmlRepository = null
+        repository.transactionId = null
+        repository.testConfig = null
+        currentState = EngineState.WAITING_FOR_INPUT
+    }
 
     private suspend fun payment(
         paymentData: PaymentData,
@@ -154,5 +184,14 @@ class PaylikeEngine {
                 }
         }
         return response
+    }
+
+    override fun notifyObservers() {
+        notifyObservers(currentState)
+    }
+
+    override fun notifyObservers(arg: Any?) {
+        super.notifyObservers(arg)
+        // TODO do we have to do anything here?
     }
 }
