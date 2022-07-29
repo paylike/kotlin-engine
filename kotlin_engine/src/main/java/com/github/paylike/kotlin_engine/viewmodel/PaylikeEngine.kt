@@ -15,6 +15,7 @@ import com.github.paylike.kotlin_engine.helper.exceptions.InvalidPaymentBodyExce
 import com.github.paylike.kotlin_engine.model.repository.EngineRepository
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
+import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
 import java.util.*
 import java.util.function.Consumer
@@ -26,25 +27,25 @@ import kotlinx.coroutines.coroutineScope
 class PaylikeEngine :
     Observable { // TODO if its not working then try https://in-kotlin.com/design-patterns/observer/
     constructor(clientId: String, apiMode: ApiMode) {
-        this.repository = EngineRepository(PaymentIntegrationDto(clientId))
-        this.apiService = PaylikeClient()
+        this.clientId = clientId
         this.apiMode = apiMode
-        if (this.apiMode == ApiMode.TEST) this.repository.testConfig = PaymentTestDto()
     }
 
     private var currentState: EngineState = EngineState.WAITING_FOR_INPUT
 
     private val error: PaylikeEngineError? = null
 
-    val repository: EngineRepository
+    val repository: EngineRepository = EngineRepository()
+
+    private val clientId: String
 
     private val apiMode: ApiMode
 
-    private val apiService: PaylikeClient
+    private val apiService: PaylikeClient = PaylikeClient()
 
     private val log: Consumer<Any> = Consumer { println(it.toString()) }
 
-    suspend fun tokenize(cardNumber: String, cvc: String, month: Int, year: Int) {
+    suspend fun createPaymentDataDto(cardNumber: String, cvc: String, month: Int, year: Int) {
         if (
             !PaylikeLuhn.isValid(cardNumber) && apiMode == ApiMode.LIVE
         ) { // TODO ez a plusz feltetel kell?
@@ -59,27 +60,32 @@ class PaylikeEngine :
             paylikeCardDto =
                 PaylikeCardDto(cardNumberToken.await(), cvcToken.await(), ExpiryDto(month, year))
         }
-        repository.cardRepository = paylikeCardDto
+        repository.paymentRepository =
+            PaymentData(
+                card = paylikeCardDto,
+                integration = PaymentIntegrationDto(this.clientId),
+            ) // TODO make it exception safe
     }
 
-    suspend fun startPayment(paymentData: PaymentData, paymentTestDto: PaymentTestDto?) {
+    suspend fun startPayment(paymentAmount: PaymentAmount, paymentTestDto: PaymentTestDto?) {
+        if (currentState != EngineState.WAITING_FOR_INPUT) {
+            throw Exception("Can't call this function in the state $currentState")
+        }
+        repository.paymentRepository =
+            repository.paymentRepository!!.copy(
+                amount = paymentAmount,
+                test = paymentTestDto,
+            )
         try {
-            val response =
-                if (paymentTestDto == null && apiMode == ApiMode.TEST) {
-                    payment(paymentData, repository.testConfig)
-                } else {
-                    payment(paymentData, paymentTestDto)
-                }
-            repository.paymentRepository = paymentData
-            repository.cardRepository = paymentData.card
-            repository.hintsRepository.plus(response.paymentResponse.hints)
-            repository.testConfig = paymentTestDto
+            val response = payment()
+            repository.paymentRepository!!.hints.plus(response.paymentResponse.hints)
+
             if (response.isHTML) {
-                currentState = EngineState.WEBVIEW_CHALLENGE_REQUIRED
                 repository.htmlRepository = response.htmlBody
+                currentState = EngineState.WEBVIEW_CHALLENGE_REQUIRED
             } else {
-                currentState = EngineState.SUCCESS
                 repository.transactionId = response.paymentResponse.transactionId
+                currentState = EngineState.SUCCESS
             }
         } catch (e: PaylikeException) {
             log.accept("An API exception happened: ${e.code} ${e.cause}")
@@ -95,23 +101,23 @@ class PaylikeEngine :
 
     suspend fun continuePayment() {
         try {
-            val resp: PaylikeClientResponse
+            val response: PaylikeClientResponse
             if (repository.paymentRepository != null) {
-                resp = apiService.paymentCreate(repository.paymentRepository!!)
-                repository.hintsRepository.plus(resp.paymentResponse.hints)
+                response = payment()
+                repository.paymentRepository!!.hints.plus(response.paymentResponse.hints)
             } else {
                 throw Exception("Engine does not have required information to continue payment")
             }
-            if (resp.isHTML) {
+            if (response.isHTML) {
                 if (currentState == EngineState.WEBVIEW_CHALLENGE_REQUIRED) {
                     currentState = EngineState.WEBVIEW_CHALLENGE_STARTED
                 } else {
                     throw Exception("Engine state invalid $currentState")
                 }
             } else {
-                if (!resp.paymentResponse.transactionId.isNullOrEmpty()) {
+                if (!response.paymentResponse.transactionId.isNullOrEmpty()) {
+                    repository.transactionId = response.paymentResponse.transactionId
                     currentState = EngineState.SUCCESS
-                    repository.transactionId = resp.paymentResponse.transactionId
                 } else {
                     throw Exception("Unexpected payment challenge failure")
                 }
@@ -130,16 +136,16 @@ class PaylikeEngine :
 
     suspend fun finishPayment() {
         try {
-            val resp: PaylikeClientResponse
-            if (repository.cardRepository != null) {
-                resp = apiService.paymentCreate(repository.paymentRepository!!)
+            val response: PaylikeClientResponse
+            if (repository.paymentRepository != null) {
+                response = payment()
             } else {
                 throw Exception("Engine does not have required information to continue payment")
             }
-            if (resp.isHTML) {
+            if (response.isHTML) {
                 throw Exception("Should not be HTML anymore")
             } else {
-                repository.transactionId = resp.paymentResponse.transactionId
+                repository.transactionId = response.paymentResponse.transactionId
                 currentState = EngineState.SUCCESS
             }
         } catch (e: PaylikeException) {
@@ -155,31 +161,25 @@ class PaylikeEngine :
     }
 
     fun resetPaymentFlow() {
-        repository.hintsRepository.clear()
-        repository.cardRepository = null
         repository.paymentRepository = null
         repository.htmlRepository = null
         repository.transactionId = null
-        repository.testConfig = null
         currentState = EngineState.WAITING_FOR_INPUT
     }
 
-    private suspend fun payment(
-        paymentData: PaymentData,
-        paymentTestDto: PaymentTestDto?
-    ): PaylikeClientResponse {
+    private suspend fun payment(): PaylikeClientResponse {
         val response: PaylikeClientResponse
         coroutineScope {
             response =
                 when (apiMode) {
                     ApiMode.LIVE -> {
-                        apiService.paymentCreate(paymentData)
+                        apiService.paymentCreate(repository.paymentRepository!!)
                     }
                     ApiMode.TEST -> {
-                        if (paymentTestDto == null) {
+                        if (repository.paymentRepository!!.test == null) {
                             throw InvalidPaymentBodyException("No PaymentTestDto is provided.")
                         }
-                        apiService.paymentCreate(paymentData.copy(test = paymentTestDto))
+                        apiService.paymentCreate(repository.paymentRepository!!)
                     }
                 }
         }
