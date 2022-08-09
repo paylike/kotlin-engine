@@ -1,7 +1,6 @@
 package com.github.paylike.kotlin_engine.view
 
 import android.graphics.Bitmap
-import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.compose.runtime.Composable
@@ -27,7 +26,6 @@ fun TdsWebView(
                                 view: WebView?,
                                 request: WebResourceRequest?
                             ): WebResourceResponse? {
-                                Log.d("Listener", request?.url.toString())
                                 return super.shouldInterceptRequest(view, request)
                             }
                             override fun onPageStarted(
@@ -47,10 +45,15 @@ fun TdsWebView(
                     this.addJavascriptInterface(listener, "Android")
                     loadData(htmlBody, null, null)
                     settings.javaScriptEnabled = true
+                    settings.allowContentAccess = true
+                    WebView.setWebContentsDebuggingEnabled(true)
                 }
             myww
         },
-        update = { it.loadData(htmlBody, null, null) },
+        update = {
+            it.loadData(htmlBody, null, null)
+            println(htmlBody)
+        },
     )
 }
 

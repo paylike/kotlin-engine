@@ -1,7 +1,6 @@
 package com.github.paylike.sample
 
 import android.os.Bundle
-import android.util.Log
 import android.webkit.JavascriptInterface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
+import com.github.paylike.kotlin_engine.model.HintsDto
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.view.JsListener
 import com.github.paylike.kotlin_engine.view.TdsWebView
@@ -25,12 +25,16 @@ import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.ServerErrorException
 import com.github.paylike.sample.ui.theme.Kotlin_engineTheme
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,18 +71,23 @@ fun EngineSampleComposable() {
                 item {
                     Button(
                         onClick = {
+                            engine.resetPaymentFlow()
                             runBlocking {
                                 try {
                                     engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
-                                    engine.startPayment(PaymentAmount("EUR", 10, 0), PaymentTestDto())
+                                    engine.startPayment(
+                                        PaymentAmount("EUR", 10, 0),
+                                        PaymentTestDto()
+                                    )
                                 } catch (e: ServerErrorException) {
-                                    Log.d("Listener", e.status.toString())
-                                    Log.d("Listener", e.headers.toString())
+                                    println("serverErrorException " + e.status.toString())
+                                    println("serverErrorException " + e.headers.toString())
                                 }
                                 if (!engine.repository.htmlRepository.isNullOrEmpty()) {
                                     htmlBody.value = engine.repository.htmlRepository!!
-                                    Log.d("Listener", htmlBody.value)
+                                    println(htmlBody.value)
                                 }
+                                println(engine.currentState)
                             }
                         },
                     ) {
@@ -90,8 +99,24 @@ fun EngineSampleComposable() {
                 }
                 item {
                     Button(onClick = {
+                            engine.repository.paymentRepository!!.hints = engine.repository.paymentRepository!!.hints.union(listener.giveHints()).toList()
+                            println("repo hints list:")
+                            engine.repository.paymentRepository!!.hints.forEach { println(it) }
+                            println(engine.currentState)
+                    }
+                    ) {
+                        Text(text = "Hints save")
+                    }
+                }
+                item {
+                    Button(onClick = {
                         runBlocking {
                             engine.continuePayment()
+                            if (!engine.repository.htmlRepository.isNullOrEmpty()) {
+                                htmlBody.value = engine.repository.htmlRepository!!
+                                println(htmlBody.value)
+                            }
+                            println(engine.currentState)
                         }
                     }) {
                         Text(text = "Webview finish")
@@ -101,6 +126,7 @@ fun EngineSampleComposable() {
                     Button(onClick = {
                         runBlocking {
                             engine.finishPayment()
+                            println(engine.currentState)
                         }
                     }) {
                         Text(text = "Finish")
@@ -111,28 +137,23 @@ fun EngineSampleComposable() {
     }
 }
 
-@Preview
-@Composable
-fun Preview(){
-    EngineSampleComposable()
-}
-
 class MyListener : JsListener {
 
     val hints: MutableList<String> = mutableListOf()
 
-    @JavascriptInterface
-    override fun receiveMessage(data: String) {
-        Log.d("Listener", data)
-        hints.union(Json.decodeFromString<HintsDto>(data).hints)
-        println(hints)
-//        engineRef.repository.paymentRepository!!.hints.union(Json.decodeFromString(data))
-//        engineRef.log.accept(engineRef.repository.paymentRepository!!.hints)
+    @JavascriptInterface override fun receiveMessage(data: String) {
+        println("listening to data: $data" )
+        hints.addAll(Json.decodeFromString<HintsDto>(data).hints)
+    }
+
+    fun giveHints(): List<String> {
+        return hints
+    }
+    suspend fun waitForHints() {
+        coroutineScope {
+            while (hints.isEmpty()) {
+
+            }
+        }
     }
 }
-
-@OptIn(ExperimentalSerializationApi::class)
-@Serializable
-data class HintsDto(
-    @EncodeDefault val hints: List<String> = emptyList(),
-)

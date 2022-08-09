@@ -31,7 +31,7 @@ class PaylikeEngine :
         this.apiMode = apiMode
     }
 
-    private var currentState: EngineState = EngineState.WAITING_FOR_INPUT
+    var currentState: EngineState = EngineState.WAITING_FOR_INPUT
 
     private val error: PaylikeEngineError? = null
 
@@ -78,7 +78,11 @@ class PaylikeEngine :
             )
         try {
             val response = payment()
-            repository.paymentRepository!!.hints.plus(response.paymentResponse.hints)
+            repository.paymentRepository!!.hints =
+                repository.paymentRepository!!
+                    .hints
+                    .union(response.paymentResponse.hints!!)
+                    .toList()
             if (response.isHTML) {
                 repository.htmlRepository = response.htmlBody
                 currentState = EngineState.WEBVIEW_CHALLENGE_REQUIRED
@@ -86,6 +90,7 @@ class PaylikeEngine :
                 repository.transactionId = response.paymentResponse.transactionId
                 currentState = EngineState.SUCCESS
             }
+            log.accept(repository.paymentRepository!!.hints) // TODO debuging
         } catch (e: PaylikeException) {
             log.accept("An API exception happened: ${e.code} ${e.cause}")
             currentState = EngineState.ERROR
@@ -95,6 +100,7 @@ class PaylikeEngine :
             currentState = EngineState.ERROR
             // TODO set error
         }
+        this.setChanged()
         this.notifyObservers()
     }
 
@@ -103,12 +109,17 @@ class PaylikeEngine :
             val response: PaylikeClientResponse
             if (repository.paymentRepository != null) {
                 response = payment()
-                repository.paymentRepository!!.hints.plus(response.paymentResponse.hints)
+                repository.paymentRepository!!.hints =
+                    repository.paymentRepository!!
+                        .hints
+                        .union(response.paymentResponse.hints ?: emptyList())
+                        .toList()
             } else {
                 throw Exception("Engine does not have required information to continue payment")
             }
             if (response.isHTML) {
                 if (currentState == EngineState.WEBVIEW_CHALLENGE_REQUIRED) {
+                    repository.htmlRepository = response.htmlBody
                     currentState = EngineState.WEBVIEW_CHALLENGE_STARTED
                 } else {
                     throw Exception("Engine state invalid $currentState")
@@ -130,6 +141,7 @@ class PaylikeEngine :
             currentState = EngineState.ERROR
             // TODO set error
         }
+        this.setChanged()
         this.notifyObservers()
     }
 
@@ -156,6 +168,7 @@ class PaylikeEngine :
             currentState = EngineState.ERROR
             // TODO set error
         }
+        this.setChanged()
         this.notifyObservers()
     }
 
