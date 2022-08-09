@@ -23,6 +23,7 @@ import com.github.paylike.kotlin_engine.view.JsListener
 import com.github.paylike.kotlin_engine.view.TdsWebView
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
+import com.github.paylike.kotlin_request.exceptions.ServerErrorException
 import com.github.paylike.sample.ui.theme.Kotlin_engineTheme
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.EncodeDefault
@@ -42,7 +43,7 @@ class SampleActivity : ComponentActivity() {
 
 @Composable
 fun EngineSampleComposable() {
-    val engine = PaylikeEngine("e393f9ec-b2f7-4f81-b455-ce45b02d355d", ApiMode.TEST) // TODO nem benne hagyni az idt
+    val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
     val listener = MyListener()
     val htmlBody: MutableState<String> = remember {
         mutableStateOf("<!DOCTYPE html>\n" +
@@ -67,8 +68,13 @@ fun EngineSampleComposable() {
                     Button(
                         onClick = {
                             runBlocking {
-                                engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
-                                engine.startPayment(PaymentAmount("EUR", 10, 0), PaymentTestDto())
+                                try {
+                                    engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
+                                    engine.startPayment(PaymentAmount("EUR", 10, 0), PaymentTestDto())
+                                } catch (e: ServerErrorException) {
+                                    Log.d("Listener", e.status.toString())
+                                    Log.d("Listener", e.headers.toString())
+                                }
                                 if (!engine.repository.htmlRepository.isNullOrEmpty()) {
                                     htmlBody.value = engine.repository.htmlRepository!!
                                     Log.d("Listener", htmlBody.value)

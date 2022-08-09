@@ -23,6 +23,18 @@ android {
         release {
             minifyEnabled false
         }
+        debug {
+            def localProperties = new Properties()
+            localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+            buildConfigField(
+                    "String",
+                    "PaylikeMerchantApiKey",
+                    (localProperties.containsKey("PaylikeMerchantApiKey")
+                            ? localProperties.getProperty("PaylikeMerchantApiKey")
+                            : "new String()"
+                    )
+            )
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
