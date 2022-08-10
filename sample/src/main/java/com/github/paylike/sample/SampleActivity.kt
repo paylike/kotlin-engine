@@ -4,10 +4,12 @@ import android.os.Bundle
 import android.webkit.JavascriptInterface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -50,13 +52,10 @@ fun EngineSampleComposable() {
     val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
     val listener = MyListener()
     val htmlBody: MutableState<String> = remember {
-        mutableStateOf("<!DOCTYPE html>\n" +
-                "<html>\n" +
+        mutableStateOf("<html>\n" +
                 "<body>\n" +
                 "\n" +
                 "<h1>My First Heading</h1>\n" +
-                "<p>My first paragraph.</p>\n" +
-                "\n" +
                 "</body>\n" +
                 "</html>")
     }
@@ -65,13 +64,17 @@ fun EngineSampleComposable() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
-            LazyColumn(Modifier.fillMaxSize(),
+            LazyColumn(Modifier.fillMaxSize()
+//                .verticalScroll(enabled = false, reverseScrolling = false, state = ScrollState(initial = 0))
+                ,
                 contentPadding = PaddingValues(8.dp),
-                verticalArrangement = Arrangement.SpaceEvenly) {
+                verticalArrangement = Arrangement.SpaceEvenly)
+            {
                 item {
                     Button(
                         onClick = {
                             engine.resetPaymentFlow()
+                            listener.hints.clear()
                             runBlocking {
                                 try {
                                     engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
@@ -81,13 +84,10 @@ fun EngineSampleComposable() {
                                     )
                                 } catch (e: ServerErrorException) {
                                     println("serverErrorException " + e.status.toString())
-                                    println("serverErrorException " + e.headers.toString())
                                 }
                                 if (!engine.repository.htmlRepository.isNullOrEmpty()) {
                                     htmlBody.value = engine.repository.htmlRepository!!
-                                    println(htmlBody.value)
                                 }
-                                println(engine.currentState)
                             }
                         },
                     ) {
@@ -100,9 +100,7 @@ fun EngineSampleComposable() {
                 item {
                     Button(onClick = {
                             engine.repository.paymentRepository!!.hints = engine.repository.paymentRepository!!.hints.union(listener.giveHints()).toList()
-                            println("repo hints list:")
                             engine.repository.paymentRepository!!.hints.forEach { println(it) }
-                            println(engine.currentState)
                     }
                     ) {
                         Text(text = "Hints save")
@@ -114,9 +112,7 @@ fun EngineSampleComposable() {
                             engine.continuePayment()
                             if (!engine.repository.htmlRepository.isNullOrEmpty()) {
                                 htmlBody.value = engine.repository.htmlRepository!!
-                                println(htmlBody.value)
                             }
-                            println(engine.currentState)
                         }
                     }) {
                         Text(text = "Webview finish")
@@ -126,7 +122,6 @@ fun EngineSampleComposable() {
                     Button(onClick = {
                         runBlocking {
                             engine.finishPayment()
-                            println(engine.currentState)
                         }
                     }) {
                         Text(text = "Finish")

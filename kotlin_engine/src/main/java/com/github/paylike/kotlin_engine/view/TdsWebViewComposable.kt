@@ -42,17 +42,26 @@ fun TdsWebView(
                                 )
                             }
                         }
-                    this.addJavascriptInterface(listener, "Android")
-                    loadData(htmlBody, null, null)
+                    WebView.setWebContentsDebuggingEnabled(true)
                     settings.javaScriptEnabled = true
                     settings.allowContentAccess = true
-                    WebView.setWebContentsDebuggingEnabled(true)
+                    settings.loadWithOverviewMode = true
+                    settings.mixedContentMode = 0
+                    settings.javaScriptCanOpenWindowsAutomatically = true
+                    this.addJavascriptInterface(listener, "Android")
+                    loadData("<!DOCTYPE html>\n<html>\n$htmlBody\n</html>", "text/html", "utf-8")
+
+                    //                    settings.defaultTextEncodingName = "utf-8";
                 }
             myww
         },
         update = {
-            it.loadData(htmlBody, null, null)
-            println(htmlBody)
+            it.loadData(
+                "<!DOCTYPE html>\n<html>\n$htmlBody\n</html>",
+                "text/html; charset=utf-8",
+                "utf-8"
+            )
+            println("<!DOCTYPE html>\n<html>\n$htmlBody\n</html>")
         },
     )
 }
