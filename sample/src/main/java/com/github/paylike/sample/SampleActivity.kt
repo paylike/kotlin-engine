@@ -20,21 +20,13 @@ import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentT
 import com.github.paylike.kotlin_engine.model.HintsDto
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.view.JsListener
-import com.github.paylike.kotlin_engine.view.TdsWebView
+import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.ServerErrorException
 import com.github.paylike.sample.ui.theme.Kotlin_engineTheme
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.EncodeDefault
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
+
 
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,8 +39,8 @@ class SampleActivity : ComponentActivity() {
 
 @Composable
 fun EngineSampleComposable() {
-    val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
-    val listener = MyListener()
+    val engine = PaylikeEngine("e393f9ec-b2f7-4f81-b455-ce45b02d355d", ApiMode.TEST)
+    val paylikeWebview = PaylikeWebview(engine)
     val htmlBody: MutableState<String> = remember {
         mutableStateOf("<!DOCTYPE html>\n" +
                 "<html>\n" +
@@ -95,18 +87,7 @@ fun EngineSampleComposable() {
                     }
                 }
                 item {
-                    TdsWebView(htmlBody = htmlBody.value, listener)
-                }
-                item {
-                    Button(onClick = {
-                            engine.repository.paymentRepository!!.hints = engine.repository.paymentRepository!!.hints.union(listener.giveHints()).toList()
-                            println("repo hints list:")
-                            engine.repository.paymentRepository!!.hints.forEach { println(it) }
-                            println(engine.currentState)
-                    }
-                    ) {
-                        Text(text = "Hints save")
-                    }
+                    paylikeWebview.WebviewComponent()
                 }
                 item {
                     Button(onClick = {
@@ -114,9 +95,10 @@ fun EngineSampleComposable() {
                             engine.continuePayment()
                             if (!engine.repository.htmlRepository.isNullOrEmpty()) {
                                 htmlBody.value = engine.repository.htmlRepository!!
-                                println(htmlBody.value)
+                                // println(htmlBody.value)
                             }
                             println(engine.currentState)
+                            println(engine.repository.paymentRepository?.hints?.size)
                         }
                     }) {
                         Text(text = "Webview finish")
@@ -137,23 +119,3 @@ fun EngineSampleComposable() {
     }
 }
 
-class MyListener : JsListener {
-
-    val hints: MutableList<String> = mutableListOf()
-
-    @JavascriptInterface override fun receiveMessage(data: String) {
-        println("listening to data: $data" )
-        hints.addAll(Json.decodeFromString<HintsDto>(data).hints)
-    }
-
-    fun giveHints(): List<String> {
-        return hints
-    }
-    suspend fun waitForHints() {
-        coroutineScope {
-            while (hints.isEmpty()) {
-
-            }
-        }
-    }
-}
