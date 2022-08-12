@@ -6,44 +6,32 @@ import android.view.ViewGroup
 import android.webkit.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.viewinterop.AndroidView
-import com.github.paylike.kotlin_engine.model.HintsDto
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
+import java.lang.Exception
 import java.util.*
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 
-class HintListener(val handler: (hint: List<String>) -> Unit) : JsListener {
-    val hints: MutableList<String> = mutableListOf()
-    @JavascriptInterface
-    override fun receiveMessage(data: String) {
-        println("listening to data: $data")
-        hints.addAll(Json.decodeFromString<HintsDto>(data).hints)
-        handler(hints)
+class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
+    private val baseHTML = "<!DOCTYPE html>\n<html>\n<body>\n</body>\n</html>\n"
+    private val webviewListener = HintsListener { hints ->
+        engine.repository.paymentRepository!!.hints =
+            engine.repository.paymentRepository!!.hints.union(hints).toList()
     }
-    fun giveHints(): List<String> {
-        return hints
-    }
-}
-
-val baseHTML =
-    "<!DOCTYPE html>\n" +
-        "<html>\n" +
-        "<body>\n" +
-        "\n" +
-        "<h1>My First Heading</h1>\n" +
-        "<p>My first paragraph.</p>\n" +
-        "\n" +
-        "</body>\n" +
-        "</html>"
-
-class PaylikeWebview(
-    private val engine: PaylikeEngine,
-) {
     private lateinit var webview: WebView
     init {
-        engine.addObserver { _, _ ->
-            if (engine.currentState === EngineState.WEBVIEW_CHALLENGE_STARTED) {
+        engine.addObserver(this)
+    }
+    override fun update(o: Observable?, arg: Any?) {
+        if (arg == null || arg !is EngineState) {
+            throw Exception("Something's fucky...")
+        }
+        when (arg as EngineState) {
+            EngineState.WAITING_FOR_INPUT -> {
+                //                webviewListener.resetHints() TODO
+                val base64 = Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
+                webview.loadData(base64, "text/html", "base64")
+            }
+            EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
                 webview.loadDataWithBaseURL(
                     "https://b.paylike.io",
                     engine.repository.htmlRepository as String,
@@ -51,10 +39,11 @@ class PaylikeWebview(
                     "UTF-8",
                     null
                 )
-            } else if (engine.currentState === EngineState.WAITING_FOR_INPUT) {
-                val base64 = Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                webview.loadData(base64, "text/html", "base64")
-            } else {
+            }
+            EngineState.ERROR -> {
+                // TODO
+            }
+            else -> {
                 val base64 =
                     Base64.encodeToString(
                         engine.repository.htmlRepository?.toByteArray(),
@@ -65,7 +54,7 @@ class PaylikeWebview(
         }
     }
     @Composable
-    fun WebviewComponent() {
+    fun WebviewComposable() {
         AndroidView(
             factory = {
                 webview =
@@ -77,19 +66,6 @@ class PaylikeWebview(
                             )
                         webViewClient =
                             object : WebViewClient() {
-                                override fun shouldOverrideUrlLoading(
-                                    view: WebView?,
-                                    request: WebResourceRequest?
-                                ): Boolean {
-                                    println("Navigating to: ${request?.url.toString()}")
-                                    return super.shouldOverrideUrlLoading(view, request)
-                                }
-                                override fun shouldInterceptRequest(
-                                    view: WebView?,
-                                    request: WebResourceRequest?
-                                ): WebResourceResponse? {
-                                    return super.shouldInterceptRequest(view, request)
-                                }
                                 override fun onPageStarted(
                                     view: WebView?,
                                     url: String?,
@@ -104,21 +80,16 @@ class PaylikeWebview(
                                     )
                                 }
                             }
-                        val listener = HintListener { hints ->
-                            engine.repository.paymentRepository!!.hints =
-                                engine.repository.paymentRepository!!.hints.union(hints).toList()
-                        }
-                        this.addJavascriptInterface(listener, "Android")
-                        var base64: String
-                        if (engine.currentState == EngineState.WAITING_FOR_INPUT) {
-                            base64 = Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                        } else {
-                            base64 =
+                        this.addJavascriptInterface(webviewListener, "Android")
+                        val base64: String =
+                            if (engine.currentState == EngineState.WAITING_FOR_INPUT) {
+                                Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
+                            } else {
                                 Base64.encodeToString(
                                     engine.repository.htmlRepository?.toByteArray(),
                                     Base64.DEFAULT
                                 )
-                        }
+                            }
                         loadData(
                             base64,
                             "text/html",
@@ -130,31 +101,6 @@ class PaylikeWebview(
                     }
                 webview
             },
-            update = {
-                if (engine.currentState === EngineState.WEBVIEW_CHALLENGE_STARTED) {
-                    it.loadDataWithBaseURL(
-                        "https://b.paylike.io",
-                        engine.repository.htmlRepository as String,
-                        "text/html",
-                        "UTF-8",
-                        null
-                    )
-                } else if (engine.currentState === EngineState.WAITING_FOR_INPUT) {
-                    val base64 = Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                    it.loadData(base64, "text/html", "base64")
-                } else {
-                    val base64 =
-                        Base64.encodeToString(
-                            engine.repository.htmlRepository?.toByteArray(),
-                            Base64.DEFAULT
-                        )
-                    it.loadData(base64, "text/html", "base64")
-                }
-            },
         )
     }
-}
-
-interface JsListener {
-    @JavascriptInterface fun receiveMessage(data: String) {}
 }
