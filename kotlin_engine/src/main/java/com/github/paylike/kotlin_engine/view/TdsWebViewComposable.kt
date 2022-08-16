@@ -82,7 +82,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                             }
                         this.addJavascriptInterface(webviewListener, "Android")
                         val base64: String =
-                            if (engine.currentState == EngineState.WAITING_FOR_INPUT) {
+                            if (engine.getCurrentState() == EngineState.WAITING_FOR_INPUT) {
                                 Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
                             } else {
                                 Base64.encodeToString(

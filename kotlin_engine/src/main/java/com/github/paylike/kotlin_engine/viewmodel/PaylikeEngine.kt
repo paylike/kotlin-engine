@@ -28,9 +28,17 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     val repository: EngineRepository = EngineRepository()
 
-    var currentState: EngineState = EngineState.WAITING_FOR_INPUT
+    private var currentState: EngineState = EngineState.WAITING_FOR_INPUT
+
+    fun getCurrentState(): EngineState {
+        return currentState
+    }
 
     private var error: PaylikeEngineError? = null
+
+    fun getError(): PaylikeEngineError? {
+        return error
+    }
 
     private val apiService: PaylikeClient = PaylikeClient()
 
