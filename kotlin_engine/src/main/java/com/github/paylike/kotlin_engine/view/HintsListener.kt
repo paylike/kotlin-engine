@@ -5,7 +5,7 @@ import com.github.paylike.kotlin_engine.model.HintsDto
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
-class HintsListener(val handler: (hint: List<String>) -> Unit) :
+class HintsListener(val handler: (hint: List<String>, isReady: Boolean) -> Unit) :
     WebviewJsListener { // TODO reset hint list if we reset engine, companion object of engine?
     private val hints: MutableList<String> = mutableListOf()
     fun resetHints() {
@@ -13,7 +13,11 @@ class HintsListener(val handler: (hint: List<String>) -> Unit) :
     }
     @JavascriptInterface
     override fun receiveMessage(data: String) {
+        if (data == "ready") {
+            handler(emptyList(), true)
+            return
+        }
         hints.addAll(Json.decodeFromString<HintsDto>(data).hints)
-        handler(hints)
+        handler(hints, false)
     }
 }

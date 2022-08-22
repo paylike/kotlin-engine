@@ -18,12 +18,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
 import com.github.paylike.kotlin_engine.model.service.ApiMode
+import com.github.paylike.kotlin_engine.view.HintsListener
 import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.sample.ui.theme.Kotlin_engineTheme
 import kotlinx.coroutines.runBlocking
+import java.util.*
 
 val engine = PaylikeEngine("e393f9ec-b2f7-4f81-b455-ce45b02d355d", ApiMode.TEST)
 val paylikeGreen= Color(0xFF2e8f29)
@@ -111,9 +113,11 @@ fun ErrorText(errorMessage: String) {
 
 @Composable
 fun EngineSampleComposable() {
-    val hintsText = remember { mutableStateOf(engine.repository.paymentRepository!!.hints.size.toString()) }
-    val transactionID = remember { mutableStateOf("") }
+    val hintsText = remember { mutableStateOf("0") }
+    val transactionID = remember { mutableStateOf("No id...") }
     val paylikeWebview = PaylikeWebview(engine)
+    val listener = Listener(hintsText, transactionID)
+    engine.addObserver(listener)
     Kotlin_engineTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
@@ -129,32 +133,18 @@ fun EngineSampleComposable() {
                     paylikeWebview.WebviewComposable()
                 }
                 item {
-                    Button(onClick = {
-                        runBlocking {
-                            hintsText.value = engine.repository.paymentRepository!!.hints.size.toString()
-                            engine.continuePayment()
-                            hintsText.value = engine.repository.paymentRepository!!.hints.size.toString()
-                        }
-                    }) {
-                        Text(text = "Webview")
-                    }
+                    Text(text = transactionID.value)
                 }
-                item {
-                    Button(onClick = {
-                        runBlocking {
-                            hintsText.value = engine.repository.paymentRepository!!.hints.size.toString()
-                            engine.finishPayment()
-                            hintsText.value = engine.repository.paymentRepository!!.hints.size.toString()
-                            transactionID.value = engine.repository.transactionId?: "No id..."
-                        }
-                    }) {
-                        Text(text = "Finish")
-                    }
-                }
-                    item {
-                        Text(text = transactionID.value)
-                    }
             }
+        }
+    }
+}
+
+class Listener(private val hints: MutableState<String>,private val transactionId: MutableState<String>) : Observer {
+    override fun update(p0: Observable?, p1: Any?) {
+        if (p0 is PaylikeEngine) {
+            hints.value = p0.repository.paymentRepository!!.hints.size.toString()
+            transactionId.value = p0.repository.transactionId?: "No id.."
         }
     }
 }

@@ -8,14 +8,40 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
+import kotlinx.coroutines.runBlocking
 import java.lang.Exception
 import java.util.*
 
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     private val baseHTML = "<!DOCTYPE html>\n<html>\n<body>\n</body>\n</html>\n"
-    private val webviewListener = HintsListener { hints ->
-        engine.repository.paymentRepository!!.hints =
-            engine.repository.paymentRepository!!.hints.union(hints).toList()
+    private val webviewListener = HintsListener { hints, isReady ->
+        if (isReady) {
+            webview.post {
+                webview.evaluateJavascript(
+                """
+                        var iframe = document.getElementById('iamframe');
+                        iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
+                        iframe.document.open();
+                        window.iframeContent = `${Base64.encodeToString(engine.repository.htmlRepository?.toByteArray(), Base64.DEFAULT)}`;
+                        iframe.document.write(window.b64Decoder(window.iframeContent));
+                        iframe.document.close();
+                        """,
+                null
+                )
+            }
+        } else {
+            engine.repository.paymentRepository!!.hints =
+                engine.repository.paymentRepository!!.hints.union(hints).toList()
+            if (engine.getCurrentState() == EngineState.WEBVIEW_CHALLENGE_STARTED) {
+                runBlocking {
+                    engine.continuePayment()
+                }
+            } else if (engine.getCurrentState() == EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED) {
+                runBlocking {
+                    engine.finishPayment()
+                }
+            }
+        }
     }
     private lateinit var webview: WebView
     init {
@@ -32,13 +58,24 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 webview.loadData(base64, "text/html", "base64")
             }
             EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
-                webview.loadDataWithBaseURL(
-                    "https://b.paylike.io",
-                    engine.repository.htmlRepository as String,
-                    "text/html",
-                    "UTF-8",
-                    null
-                )
+                webview.post {
+                    webview.evaluateJavascript(
+                        """
+                            var iframe = document.getElementById('iamframe');
+                            iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
+                            iframe.document.open();
+                            window.iframeContent = `${
+                                Base64.encodeToString(
+                                    engine.repository.htmlRepository?.toByteArray(),
+                                    Base64.DEFAULT
+                                )
+                            }`;
+                            iframe.document.write(window.b64Decoder(window.iframeContent));
+                            iframe.document.close();
+                            """,
+                        null
+                    )
+                }
             }
             EngineState.ERROR -> {
                 // TODO
@@ -64,36 +101,14 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
-                        webViewClient =
-                            object : WebViewClient() {
-                                override fun onPageStarted(
-                                    view: WebView?,
-                                    url: String?,
-                                    favicon: Bitmap?
-                                ) {
-                                    super.onPageStarted(view, url, favicon)
-                                    view?.loadUrl(
-                                        "javascript:(function() {" +
-                                            "window.parent.addEventListener ('message', function(event) {" +
-                                            " Android.receiveMessage(JSON.stringify(event.data));});" +
-                                            "})()"
-                                    )
-                                }
-                            }
+                        webViewClient = WebViewClient()
                         this.addJavascriptInterface(webviewListener, "Android")
-                        val base64: String =
-                            if (engine.getCurrentState() == EngineState.WAITING_FOR_INPUT) {
-                                Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                            } else {
-                                Base64.encodeToString(
-                                    engine.repository.htmlRepository?.toByteArray(),
-                                    Base64.DEFAULT
-                                )
-                            }
-                        loadData(
-                            base64,
+                        loadDataWithBaseURL(
+                            "https:///b.paylike.io",
+                            HTMLService().generateWatcher(),
                             "text/html",
-                            "base64",
+                            "utf-8",
+                            null
                         )
                         settings.javaScriptEnabled = true
                         settings.allowContentAccess = true
