@@ -26,12 +26,10 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         if (arg == null || arg !is EngineState) {
             throw Exception("Something's fucky...") // TODO not to leave it like this
         }
-        when (arg as EngineState) {
+        when (arg) {
             EngineState.WAITING_FOR_INPUT -> {
                 isRendered.value = false
-                //                webviewListener.resetHints() TODO
-                val base64 = Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                webview.loadData(base64, "text/html", "base64")
+                webviewListener.resetHints() // TODO is it a good place for that?
             }
             EngineState.WEBVIEW_CHALLENGE_STARTED -> {
                 isRendered.value = true
@@ -54,69 +52,46 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
             }
             EngineState.ERROR -> {
                 isRendered.value = false
-                // TODO
             }
             EngineState.SUCCESS -> {
                 isRendered.value = false
-                val base64 =
-                    Base64.encodeToString(
-                        engine.repository.htmlRepository?.toByteArray(),
-                        Base64.DEFAULT
-                    )
-                webview.loadData(base64, "text/html", "base64")
             }
         }
     }
     @Composable
     fun WebviewComposable() {
-        if (remember { isRendered }.value) {
-            AndroidView(
-                factory = {
-                    webview =
-                        WebView(it).apply {
-                            layoutParams =
-                                ViewGroup.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                            webViewClient =
-                                object : WebViewClient() {
-                                    override fun onPageStarted(
-                                        view: WebView?,
-                                        url: String?,
-                                        favicon: Bitmap?
-                                    ) {
-                                        super.onPageStarted(view, url, favicon)
-                                        view?.loadUrl(
-                                            "javascript:(function() {" +
-                                                "window.parent.addEventListener ('message', function(event) {" +
-                                                " Android.receiveMessage(JSON.stringify(event.data));});" +
-                                                "})()"
-                                        )
-                                    }
-                                }
-                            this.addJavascriptInterface(webviewListener, "Android")
-                            val base64: String =
-                                if (engine.currentState == EngineState.WAITING_FOR_INPUT) {
-                                    Base64.encodeToString(baseHTML.toByteArray(), Base64.DEFAULT)
-                                } else {
-                                    Base64.encodeToString(
-                                        engine.repository.htmlRepository?.toByteArray(),
-                                        Base64.DEFAULT
+        AndroidView(
+            factory = {
+                webview =
+                    WebView(it).apply {
+                        layoutParams =
+                            ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                        webViewClient =
+                            object : WebViewClient() {
+                                override fun onPageStarted(
+                                    view: WebView?,
+                                    url: String?,
+                                    favicon: Bitmap?
+                                ) {
+                                    super.onPageStarted(view, url, favicon)
+                                    view?.loadUrl(
+                                        "javascript:(function() {" +
+                                            "window.parent.addEventListener ('message', function(event) {" +
+                                            " Android.receiveMessage(JSON.stringify(event.data));});" +
+                                            "})()"
                                     )
                                 }
-                            loadData(
-                                base64,
-                                "text/html",
-                                "base64",
-                            )
-                            settings.javaScriptEnabled = true
-                            settings.allowContentAccess = true
-                            WebView.setWebContentsDebuggingEnabled(true)
-                        }
-                    webview
-                },
-            )
-        }
+                            }
+                        this.addJavascriptInterface(webviewListener, "Android")
+                        settings.javaScriptEnabled = true
+                        settings.allowContentAccess = true
+                        WebView.setWebContentsDebuggingEnabled(true)
+                    }
+                webview
+            }
+        )
     }
 }
