@@ -2,15 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.github.paylike.sample">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application android:allowBackup="true">
         <activity
             android:name=".SampleActivity"
             android:exported="true"
             android:label="@string/title_activity_sample"
-            android:theme="@style/Theme.Kotlin_engine.NoActionBar">
+            android:theme="@style/Theme.Kotlin_engine"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+def compose_version  = '1.2.0'
+
 android {
     compileSdk 32
 
@@ -12,11 +14,26 @@ android {
         targetSdk 32
         versionCode 1
         versionName "1.0"
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
+        }
+        debug {
+            def localProperties = new Properties()
+            localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+            buildConfigField(
+                    "String",
+                    "PaylikeMerchantApiKey",
+                    (localProperties.containsKey("PaylikeMerchantApiKey")
+                            ? localProperties.getProperty("PaylikeMerchantApiKey")
+                            : "new String()"
+                    )
+            )
         }
     }
     compileOptions {
@@ -28,33 +45,33 @@ android {
     }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
     }
     buildFeatures {
         viewBinding true
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion compose_version
     }
 
 }
 
 dependencies {
-    implementation project(":kotlin_engine")
-    implementation 'com.google.android.material:material:1.6.1'
-    implementation 'androidx.appcompat:appcompat:1.4.2'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.1'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.5.1'
+    implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.material:material:$compose_version"
+    implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation 'androidx.activity:activity-compose:1.5.1'
 
-    implementation 'androidx.compose.ui:ui:1.2.0'
-    // Integration with activities
-    implementation 'androidx.activity:activity-compose:1.5.1'
-    // Compose Material Design
-    implementation 'androidx.compose.material:material:1.2.0'
-    // Animations
-    implementation 'androidx.compose.animation:animation:1.2.0'
-    // Tooling support (Previews, etc.)
-    implementation 'androidx.compose.ui:ui-tooling:1.2.0'
-    // Integration with ViewModels
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
-    implementation 'androidx.activity:activity-compose:1.5.1'
-    // UI Tests
-    androidTestImplementation 'androidx.compose.ui:ui-test-junit4:1.2.0'
+    implementation project(":kotlin_engine")
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.3.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.3.3'
+
+
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
+    debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+    debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_version"
 }
