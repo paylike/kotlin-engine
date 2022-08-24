@@ -17,8 +17,9 @@ import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
-import java.util.Observable
+import java.util.*
 import java.util.function.Consumer
+import kotlin.reflect.full.superclasses
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -121,7 +122,8 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             )
             if (repository.paymentRepository!!.hints.size != 6) {
                 throw NotRightAmountOfHintsFoundException(
-                    "Not right amount of hints. Need 6 hints to continue payment.\nCurrent number is: ${repository.paymentRepository!!.hints.size}"
+                    6,
+                    repository.paymentRepository!!.hints.size,
                 )
             }
             val response = payment()
@@ -158,7 +160,8 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             )
             if (repository.paymentRepository!!.hints.size != 8) {
                 throw NotRightAmountOfHintsFoundException(
-                    "Not enough hints. Need 8 hints to continue payment.\nCurrent number is:$repository.paymentRepository!!.hints.size"
+                    8,
+                    repository.paymentRepository!!.hints.size,
                 )
             }
             val response = payment()
@@ -240,19 +243,19 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /** Sets error corresponding to the cause */
     private fun setErrorState(e: Exception) { // TODO debug the reflection logic for the classes...
-        when (e::javaClass) {
-            PaylikeException::javaClass -> {
+        when (e::class.superclasses.first()) {
+            PaylikeException::class -> {
                 e as PaylikeException
-                log.accept("An API exception happened: ${e.code} ${e.cause}")
+                log.accept("An API exception occurred: ${e.code} ${e.cause}")
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
                         paylikeException = e
                     )
             }
-            EngineException::javaClass -> {
+            EngineException::class -> {
                 e as EngineException
-                log.accept("An internal exception happened: ${e.message}")
+                log.accept("An engine exception occurred: ${e.message}")
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
@@ -260,7 +263,8 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
             }
             else -> {
-                log.accept("A not defined exception has occurred: $e")
+                log.accept("A not paylike nor engine exception has occurred: $e")
+                error = PaylikeEngineError(e.message ?: "No exception message is included.")
             }
         }
         currentState = EngineState.ERROR
