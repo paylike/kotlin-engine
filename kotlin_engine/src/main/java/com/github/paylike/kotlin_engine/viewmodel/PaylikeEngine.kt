@@ -17,7 +17,7 @@ import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
-import java.util.*
+import java.util.Observable
 import java.util.function.Consumer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -29,8 +29,10 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     val repository: EngineRepository = EngineRepository()
 
     var currentState: EngineState = EngineState.WAITING_FOR_INPUT
+        private set
 
-    private var error: PaylikeEngineError? = null
+    var error: PaylikeEngineError? = null
+        private set
 
     private val apiService: PaylikeClient = PaylikeClient()
 
@@ -111,7 +113,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
-    suspend fun continuePayment() { // TODO will fail if we cant catch postMessage from webview
+    suspend fun continuePayment() {
         try {
             checkValidState(
                 validState = EngineState.WEBVIEW_CHALLENGE_STARTED,
@@ -148,24 +150,23 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
-    suspend fun finishPayment() { // TODO will fail if we cant catch postMessage from webview
+    suspend fun finishPayment() {
         try {
             checkValidState(
                 validState = EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED,
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
-            //            if (repository.paymentRepository!!.hints.size != 8) { // TODO
-            //                throw NotRightAmountOfHintsFoundException("Not enough hints. Need 6/*
-            // TODO */ hints to continue payment.\nCurrent number is:
-            // $repository.paymentRepository!!.hints.size")
-            //            }
+            if (repository.paymentRepository!!.hints.size != 8) {
+                throw NotRightAmountOfHintsFoundException(
+                    "Not enough hints. Need 8 hints to continue payment.\nCurrent number is:$repository.paymentRepository!!.hints.size"
+                )
+            }
             val response = payment()
             repository.paymentRepository!!.hints =
                 repository.paymentRepository!!
                     .hints
                     .union(response.paymentResponse.hints ?: emptyList())
                     .toList()
-            // TODO save the last portion of hints?
             if (response.isHTML) {
                 throw HtmlResponseException("Response should not be HTML anymore")
             } else {
@@ -217,9 +218,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             repository.paymentRepository?.integration == null ||
                 repository.paymentRepository?.card == null
         ) {
-            throw InvalidPaymentDataException(
-                "PaymentBody is not valid."
-            ) // TODO print the missing field, is it necessary?
+            throw InvalidPaymentDataException("PaymentBody is not valid.")
         }
         if (this.apiMode == ApiMode.TEST && repository.paymentRepository?.test == null) {
             throw InvalidPaymentDataException("PaymentBody is not valid. Test DTO is missing.")
@@ -240,7 +239,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /** Sets error corresponding to the cause */
-    private fun setErrorState(e: Exception) { // TODO debug de reflection logic for the classes...
+    private fun setErrorState(e: Exception) { // TODO debug the reflection logic for the classes...
         when (e::javaClass) {
             PaylikeException::javaClass -> {
                 e as PaylikeException
