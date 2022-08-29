@@ -22,7 +22,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
             webview.post {
                 webview.evaluateJavascript(
                     """
-                        var iframe = document.getElementById('iamframe');
+                        var iframe = document.getElementById('tdsiframe');
                         iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
                         iframe.document.open();
                         window.iframeContent = `${Base64.encodeToString(engine.repository.htmlRepository?.toByteArray(), Base64.DEFAULT)}`;
@@ -72,7 +72,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 webview.post {
                     webview.evaluateJavascript(
                         """
-                            var iframe = document.getElementById('iamframe');
+                            var iframe = document.getElementById('tdsiframe');
                             iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
                             iframe.document.open();
                             window.iframeContent = `${

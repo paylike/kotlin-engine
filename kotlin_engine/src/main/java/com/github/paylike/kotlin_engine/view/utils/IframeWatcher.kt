@@ -10,6 +10,7 @@ const val IframeWatcher: String =
     <style>
         body {
             height: 100%;
+            width: 100%;
                 }
                 #iframe-div {
                     position: absolute;
@@ -20,15 +21,16 @@ const val IframeWatcher: String =
                     display: flex;
                     justify-content: center;
                 }
-                #iamframe {
+                #tdsiframe {
                     width: 100%;
+                    height: 100%;
                 }
     </style>
 </head>
 
 <body>
     <div id="iframe-div">
-        <iframe id="iamframe">
+        <iframe id="tdsiframe">
     </iframe>
     </div>
     <script>
