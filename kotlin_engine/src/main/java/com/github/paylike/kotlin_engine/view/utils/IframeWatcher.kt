@@ -9,7 +9,7 @@ const val IframeWatcher: String =
 <head>
     <style>
         body {
-            height: 300px;
+            height: 100%;
                 }
                 #iframe-div {
                     position: absolute;

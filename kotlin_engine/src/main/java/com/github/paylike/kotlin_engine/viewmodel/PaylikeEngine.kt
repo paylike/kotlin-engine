@@ -242,7 +242,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /** Sets error corresponding to the cause */
-    private fun setErrorState(e: Exception) { // TODO debug the reflection logic for the classes...
+    private fun setErrorState(e: Exception) {
         when (e::class.superclasses.first()) {
             PaylikeException::class -> {
                 e as PaylikeException

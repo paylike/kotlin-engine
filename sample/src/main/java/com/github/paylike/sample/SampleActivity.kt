@@ -2,20 +2,19 @@ package com.github.paylike.sample
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
+import com.github.paylike.kotlin_engine.helper.PaylikeEngineError
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
@@ -56,17 +55,13 @@ fun SampleScaffold() {
 @Composable
 fun SampleScreen(engine: PaylikeEngine, isActive: Boolean, isActiveChange: (Boolean) -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(), // 1
-        horizontalAlignment = Alignment.CenterHorizontally, // 2
-        verticalArrangement = Arrangement.Center // 3
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         if (isActive) {
-            EngineSampleComposable(engine)
+            SampleTdsPaymentComposable(engine)
         } else {
-            val error = engine.error
-            if(error != null) {
-                ErrorText(error.message)
-            }
             PayButton(engine, isActiveChange)
         }
     }
@@ -74,7 +69,6 @@ fun SampleScreen(engine: PaylikeEngine, isActive: Boolean, isActiveChange: (Bool
 
 @Composable
 fun PayButton(engine: PaylikeEngine, isActiveChange: (Boolean) -> Unit) {
-
     Button(
         onClick = {
             engine.resetEngineStates()
@@ -93,34 +87,41 @@ fun PayButton(engine: PaylikeEngine, isActiveChange: (Boolean) -> Unit) {
 }
 
 @Composable
-fun EngineSampleComposable(engine: PaylikeEngine) {
+fun SampleTdsPaymentComposable(engine: PaylikeEngine) {
     val hintsText = remember { mutableStateOf("0") }
     val transactionID = remember { mutableStateOf("No id...") }
+    val errorMutableState: PaylikeEngineError? = null
+    val error = remember { mutableStateOf(errorMutableState) }
+    val statesListener = StatesListener(hintsText, transactionID, error)
+    engine.addObserver(statesListener)
 
-    val listener = Listener(hintsText, transactionID)
-    engine.addObserver(listener)
-
-    val paylikeWebview = PaylikeWebview(engine)
-
-    LazyColumn(Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.SpaceEvenly) {
-        item {
-            Text(text = hintsText.value)
-        }
-        item {
-            paylikeWebview.WebviewComposable()
-        }
-        item {
-            Text(text = transactionID.value)
-        }
+    if (error.value != null) {
+        Toast.makeText(LocalContext.current, error.value!!.message, Toast.LENGTH_LONG).show()
     }
-}
 
-@Composable
-fun ErrorText(errorMessage: String) {
-    Text(
-        "Error: $errorMessage",
-        fontSize = 30.sp,
-    )
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            modifier = Modifier
+                .fillMaxWidth(1f)
+                .height(20.dp),
+            text = hintsText.value,
+            textAlign = TextAlign.Start,
+            )
+        Text(
+            modifier = Modifier
+                .fillMaxWidth(1f)
+                .height(20.dp),
+            text = transactionID.value,
+            textAlign = TextAlign.Start,
+        )
+        PaylikeWebview(engine).WebviewComposable(
+            modifier =  Modifier
+                .fillMaxWidth(1f)
+                .fillMaxHeight(0.4f)
+        )
+    }
 }

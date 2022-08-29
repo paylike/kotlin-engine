@@ -6,7 +6,9 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.view.utils.HintsListener
 import com.github.paylike.kotlin_engine.view.utils.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
@@ -92,8 +94,10 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     }
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
-    fun WebviewComposable() {
+    fun WebviewComposable(modifier: Modifier = Modifier) {
+
         AndroidView(
+            modifier = modifier,
             factory = {
                 webview =
                     WebView(it).apply {
@@ -113,7 +117,9 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                         )
                         settings.javaScriptEnabled = true
                         settings.allowContentAccess = true
-                        WebView.setWebContentsDebuggingEnabled(true)
+                        if (BuildConfig.DEBUG) {
+                            WebView.setWebContentsDebuggingEnabled(true)
+                        }
                     }
                 webview
             }
