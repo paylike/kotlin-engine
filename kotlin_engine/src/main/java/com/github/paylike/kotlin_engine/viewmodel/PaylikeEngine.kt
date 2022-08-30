@@ -77,6 +77,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
+    /** Start function for a payment flow */
     suspend fun startPayment(paymentAmount: PaymentAmount, paymentTestDto: PaymentTestDto?) {
         try {
             checkValidState(
@@ -114,6 +115,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
+    /** Private function to implement the flow */
     suspend fun continuePayment() {
         try {
             checkValidState(
@@ -152,6 +154,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
+    /** Private function to implement the flow */
     suspend fun finishPayment() {
         try {
             checkValidState(
@@ -194,11 +197,14 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /** Resets the [repository], [currentState] and [error] */
     fun resetEngineStates() {
-        repository.paymentRepository = null
-        repository.htmlRepository = null
-        repository.transactionId = null
         currentState = EngineState.WAITING_FOR_INPUT
+        repository.apply {
+            paymentRepository = null
+            htmlRepository = null
+            transactionId = null
+        }
         error = null
+        this.notifyObservers()
     }
 
     /** Checks if we are in the valid state, if not throw exception */

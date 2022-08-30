@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
@@ -14,44 +15,37 @@ import com.github.paylike.kotlin_engine.view.utils.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import java.util.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 
+/** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
+    val shouldWebviewRender = mutableStateOf(false)
+    private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
-        if (isReady) {
-            webview.post {
-                webview.evaluateJavascript(
-                    """
-                        var iframe = document.getElementById('tdsiframe');
-                        iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
-                        iframe.document.open();
-                        window.iframeContent = `${Base64.encodeToString(engine.repository.htmlRepository?.toByteArray(), Base64.DEFAULT)}`;
-                        iframe.document.write(window.b64Decoder(window.iframeContent));
-                        iframe.document.close();
-                        """,
-                    null
-                )
-            }
-        } else {
+        if (!isReady) {
             engine.repository.paymentRepository!!.hints =
                 engine.repository.paymentRepository!!.hints.union(hints).toList()
-            runBlocking {
-                when (engine.currentState) {
-                    EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                        engine.continuePayment()
-                    }
-                    EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
-                        engine.finishPayment()
-                    }
-                    else -> {}
+            when (engine.currentState) {
+                EngineState.WEBVIEW_CHALLENGE_STARTED -> {
+                    CoroutineScope(Dispatchers.IO).async { engine.continuePayment() }
                 }
+                EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
+                    CoroutineScope(Dispatchers.IO).async { engine.finishPayment() }
+                }
+                else -> {}
             }
         }
     }
-    private lateinit var webview: WebView
+
+    /** Initialize the webview class to listen to the engine we provided during instantiation */
     init {
         engine.addObserver(this)
     }
+
+    /**
+     * Observer update function overload Sets the visibility and content of the [WebviewComposable]
+     * based on the provided [EngineState]
+     */
     override fun update(o: Observable?, arg: Any?) {
         if (arg == null || arg !is EngineState) {
             throw Exception("Something's fucky...")
@@ -61,41 +55,68 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 webviewListener.resetHints()
             }
             EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                val base64 =
-                    Base64.encodeToString(
-                        engine.repository.htmlRepository?.toByteArray(),
-                        Base64.DEFAULT
-                    )
-                webview.loadData(base64, "text/html", "base64")
-            }
-            EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
-                webview.post {
-                    webview.evaluateJavascript(
-                        """
+                //                val base64 =
+                //                    Base64.encodeToString(
+                //                        engine.repository.htmlRepository?.toByteArray(),
+                //                        Base64.DEFAULT
+                //                    )
+                MainScope().launch {
+                    //                    webview.loadData(base64, "text/html", "base64")
+                    webview.post {
+                        webview.evaluateJavascript(
+                            """
                             var iframe = document.getElementById('tdsiframe');
                             iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
                             iframe.document.open();
                             window.iframeContent = `${
-                            Base64.encodeToString(
-                                engine.repository.htmlRepository?.toByteArray(),
-                                Base64.DEFAULT
-                            )
-                        }`;
+                                Base64.encodeToString(
+                                    engine.repository.htmlRepository?.toByteArray(),
+                                    Base64.DEFAULT
+                                )
+                            }`;
                             iframe.document.write(window.b64Decoder(window.iframeContent));
                             iframe.document.close();
                             """,
-                        null
-                    )
+                            null
+                        )
+                    }
                 }
             }
-            EngineState.ERROR -> {}
-            EngineState.SUCCESS -> {}
+            EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
+                MainScope().launch {
+                    webview.post {
+                        webview.evaluateJavascript(
+                            """
+                            var iframe = document.getElementById('tdsiframe');
+                            iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
+                            iframe.document.open();
+                            window.iframeContent = `${
+                                Base64.encodeToString(
+                                    engine.repository.htmlRepository?.toByteArray(),
+                                    Base64.DEFAULT
+                                )
+                            }`;
+                            iframe.document.write(window.b64Decoder(window.iframeContent));
+                            iframe.document.close();
+                            """,
+                            null
+                        )
+                    }
+                }
+            }
+            EngineState.SUCCESS -> {
+                shouldWebviewRender.value = false
+            }
+            EngineState.ERROR -> {
+                shouldWebviewRender.value = false
+            }
         }
     }
+
+    /** Webview composable function to execute the tds flow */
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
     fun WebviewComposable(modifier: Modifier = Modifier) {
-
         AndroidView(
             modifier = modifier,
             factory = {
@@ -115,6 +136,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                             "utf-8",
                             null
                         )
+
                         settings.javaScriptEnabled = true
                         settings.allowContentAccess = true
                         if (BuildConfig.DEBUG) {

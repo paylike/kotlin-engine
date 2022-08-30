@@ -5,9 +5,15 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -20,108 +26,119 @@ import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.sample.ui.theme.PaylikeTheme
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 
+/**
+ * Sample activity to demonstrate Paylike payment method with Compose
+ */
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
         setContent {
-            SampleScaffold()
+            SampleScaffold(engine)
         }
     }
 }
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun SampleScaffold() {
-    val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
-    var isActive by remember { mutableStateOf(shouldBeActive(engine.currentState)) }
-
+fun SampleScaffold(engine: PaylikeEngine) {
     PaylikeTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colors.background
         ) {
             Scaffold(
-                topBar = { TopAppBar(title = {Text("Pay with PayLike")})  },
-                content = {
-                    SampleScreen(engine, isActive, isActiveChange = { isActive = it })
-                },
+                topBar = { TopAppBar(
+                    title = { Text("Pay with PayLike") },
+                )  },
+                content = { SampleScreen(engine) },
             )
         }
     }
 }
 
 @Composable
-fun SampleScreen(engine: PaylikeEngine, isActive: Boolean, isActiveChange: (Boolean) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
+fun SampleScreen(engine: PaylikeEngine, ) {
+    val errorMutableState: PaylikeEngineError? = null
+    val error = remember { mutableStateOf(errorMutableState) }
+
+    val hintsText = remember { mutableStateOf("0") }
+    val transactionID = remember { mutableStateOf("No transaction id yet") }
+    val statesListener = StatesListener(hintsText, transactionID, error)
+    engine.addObserver(statesListener)
+
+    val webview = PaylikeWebview(engine)
+    val shouldWebviewRender = remember { webview.shouldWebviewRender }
+
+    if (error.value != null) {
+        Toast.makeText(LocalContext.current, error.value!!.message, Toast.LENGTH_LONG).show()
+    }
+
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
     ) {
-        if (isActive) {
-            SampleTdsPaymentComposable(engine)
-        } else {
-            PayButton(engine, isActiveChange)
+        item {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .height(30.dp),
+                text = hintsText.value,
+                textAlign = TextAlign.Center,
+            )
+        }
+        item {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .height(30.dp),
+                text = transactionID.value,
+                textAlign = TextAlign.Center,
+            )
+        }
+        item {
+            if (shouldWebviewRender.value) {
+                webview.WebviewComposable(
+                    modifier = Modifier
+                        .fillMaxWidth(1f)
+                        .height(300.dp)
+                )
+            } else {
+                PayButton(
+                    engine,
+                    webview,
+                )
+            }
         }
     }
 }
 
+/**
+ * Starts Payment
+ */
 @Composable
-fun PayButton(engine: PaylikeEngine, isActiveChange: (Boolean) -> Unit) {
+fun PayButton(
+    engine: PaylikeEngine,
+    webview: PaylikeWebview
+) {
     Button(
         onClick = {
             engine.resetEngineStates()
-            runBlocking {
+            webview.shouldWebviewRender.value = true
+            CoroutineScope(Dispatchers.IO).async {
                 engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
                 engine.startPayment(
                     PaymentAmount("EUR", 1, 0),
                     PaymentTestDto()
                 )
             }
-            isActiveChange(shouldBeActive(engine.currentState))
         },
     ) {
         Text(text = "Pay")
-    }
-}
-
-@Composable
-fun SampleTdsPaymentComposable(engine: PaylikeEngine) {
-    val hintsText = remember { mutableStateOf("0") }
-    val transactionID = remember { mutableStateOf("No id...") }
-    val errorMutableState: PaylikeEngineError? = null
-    val error = remember { mutableStateOf(errorMutableState) }
-    val statesListener = StatesListener(hintsText, transactionID, error)
-    engine.addObserver(statesListener)
-
-    if (error.value != null) {
-        Toast.makeText(LocalContext.current, error.value!!.message, Toast.LENGTH_LONG).show()
-    }
-
-    Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.SpaceEvenly,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            modifier = Modifier
-                .fillMaxWidth(1f)
-                .height(20.dp),
-            text = hintsText.value,
-            textAlign = TextAlign.Start,
-            )
-        Text(
-            modifier = Modifier
-                .fillMaxWidth(1f)
-                .height(20.dp),
-            text = transactionID.value,
-            textAlign = TextAlign.Start,
-        )
-        PaylikeWebview(engine).WebviewComposable(
-            modifier =  Modifier
-                .fillMaxWidth(1f)
-                .fillMaxHeight(0.4f)
-        )
     }
 }
