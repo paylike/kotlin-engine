@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
-import com.github.paylike.kotlin_engine.helper.PaylikeEngineError
+import com.github.paylike.kotlin_engine.error.PaylikeEngineError
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine

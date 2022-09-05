@@ -1,6 +1,6 @@
-package com.github.paylike.kotlin_engine.helper
+package com.github.paylike.kotlin_engine.error
 
-import com.github.paylike.kotlin_engine.helper.exceptions.EngineException
+import com.github.paylike.kotlin_engine.error.exceptions.EngineException
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
 
 /** Describes an error state of the engine */

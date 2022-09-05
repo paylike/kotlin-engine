@@ -1,7 +1,7 @@
 package com.github.paylike.sample
 
 import androidx.compose.runtime.MutableState
-import com.github.paylike.kotlin_engine.helper.PaylikeEngineError
+import com.github.paylike.kotlin_engine.error.PaylikeEngineError
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import java.util.*
 

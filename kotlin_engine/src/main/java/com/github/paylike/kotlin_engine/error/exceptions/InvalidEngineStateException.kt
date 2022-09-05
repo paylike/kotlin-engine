@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.helper.exceptions
+package com.github.paylike.kotlin_engine.error.exceptions
 
 /** Thrown when some function is called in the wrong state */
 class InvalidEngineStateException(override val message: String) : EngineException()

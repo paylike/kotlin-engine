@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.helper.exceptions
+package com.github.paylike.kotlin_engine.error.exceptions
 
 /** Thrown if something is not found */
 class NotRightAmountOfHintsFoundException(
