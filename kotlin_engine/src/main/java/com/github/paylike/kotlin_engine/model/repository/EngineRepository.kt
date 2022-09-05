@@ -3,9 +3,10 @@ package com.github.paylike.kotlin_engine.model.repository
 import com.github.paylike.kotlin_client.domain.dto.payment.request.PaymentData
 
 /**
- * Holds consistently [paymentRepository] which holds the payment payload, [htmlRepository] which
- * holds the actual html to render in webView, [transactionId] which is the final response of the
- * api.
+ * Engine repository is used to store essential data required for the engine to execute the payment flow
+ * [paymentRepository] - Body of the request payment
+ * [htmlRepository] - HTMLs acquired during the TDS part of the payment flow
+ * [transactionId] - Reference for the created transaction after successful payment transactions
  */
 data class EngineRepository(
     /** Payment payload information */
