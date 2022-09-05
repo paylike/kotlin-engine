@@ -14,26 +14,27 @@ import com.github.paylike.kotlin_engine.view.utils.HintsListener
 import com.github.paylike.kotlin_engine.view.utils.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
-import java.util.*
 import kotlinx.coroutines.*
+import java.util.*
 
 /** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     val shouldWebviewRender = mutableStateOf(false)
     private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
-        if (!isReady) {
-            engine.repository.paymentRepository!!.hints =
-                engine.repository.paymentRepository!!.hints.union(hints).toList()
-            when (engine.currentState) {
-                EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                    CoroutineScope(Dispatchers.IO).async { engine.continuePayment() }
-                }
-                EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
-                    CoroutineScope(Dispatchers.IO).async { engine.finishPayment() }
-                }
-                else -> {}
+        if (isReady) {
+            return@HintsListener
+        }
+        engine.repository.paymentRepository!!.hints =
+            engine.repository.paymentRepository!!.hints.union(hints).toList()
+        when (engine.currentState) {
+            EngineState.WEBVIEW_CHALLENGE_STARTED -> {
+                CoroutineScope(Dispatchers.IO).async { engine.continuePayment() }
             }
+            EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
+                CoroutineScope(Dispatchers.IO).async { engine.finishPayment() }
+            }
+            else -> {}
         }
     }
 
