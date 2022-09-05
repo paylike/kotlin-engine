@@ -15,9 +15,19 @@ class StatesListener(
     ) : Observer {
     override fun update(p0: Observable?, p1: Any?) {
         if (p0 is PaylikeEngine) {
-            hints.value = p0.repository.paymentRepository?.hints?.size.toString()
-            transactionId.value = p0.repository.transactionId?: "No id.."
+            if (p0.repository.paymentRepository != null) {
+                hints.value = p0.repository.paymentRepository!!.hints.size.toString()
+            } else {
+                hints.value = "0"
+            }
+            transactionId.value = p0.repository.transactionId?: "No transaction id yet"
             error.value = p0.error
+        }
+        else {
+            val observableClassName: String = if (p0 != null) {
+                p0::class.simpleName!!
+            } else { "Anonymous" }
+            throw Exception("StatesListener is listening to something unexpected: $observableClassName")
         }
     }
 }
