@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
+import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
 import com.github.paylike.kotlin_engine.view.utils.HintsListener
 import com.github.paylike.kotlin_engine.view.utils.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
@@ -49,20 +50,20 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
      */
     override fun update(o: Observable?, arg: Any?) {
         if (arg == null || arg !is EngineState) {
-            throw Exception("Something's fucky...")
+            throw WrongTypeOfObserverUpdateArg("The argument we got is ${
+                if (arg == null) {
+                    "null"
+                } else {
+                    arg::class.simpleName
+                }
+            }")
         }
         when (arg) {
             EngineState.WAITING_FOR_INPUT -> {
                 webviewListener.resetHints()
             }
             EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                //                val base64 =
-                //                    Base64.encodeToString(
-                //                        engine.repository.htmlRepository?.toByteArray(),
-                //                        Base64.DEFAULT
-                //                    )
                 MainScope().launch {
-                    //                    webview.loadData(base64, "text/html", "base64")
                     webview.post {
                         webview.evaluateJavascript(
                             """
