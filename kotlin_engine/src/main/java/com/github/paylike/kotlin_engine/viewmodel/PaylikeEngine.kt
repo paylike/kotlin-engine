@@ -6,7 +6,9 @@ import com.github.paylike.kotlin_client.domain.dto.payment.request.PaymentData
 import com.github.paylike.kotlin_client.domain.dto.payment.request.card.ExpiryDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.card.PaylikeCardDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.integration.PaymentIntegrationDto
+import com.github.paylike.kotlin_client.domain.dto.payment.request.plan.PaymentPlanDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
+import com.github.paylike.kotlin_client.domain.dto.payment.request.unplanned.PaymentUnplannedDto
 import com.github.paylike.kotlin_client.domain.dto.payment.response.PaylikeClientResponse
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeData
 import com.github.paylike.kotlin_client.domain.dto.tokenize.request.TokenizeTypes
@@ -19,12 +21,14 @@ import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonObject
 import java.util.*
 import java.util.function.Consumer
 import kotlin.reflect.full.superclasses
 
-/** Paylike engine */
-// TODO KDoc of engine
+/** Paylike engine
+ * Observable wrapper class to support Paylike transactions towards the API
+ */
 class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode) : Observable() {
 
     val repository: EngineRepository = EngineRepository()
@@ -35,14 +39,18 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     var error: PaylikeEngineError? = null
         private set
 
-    private val apiService: PaylikeClient = PaylikeClient()
+    private val apiClient: PaylikeClient = PaylikeClient()
 
-    private val log: Consumer<Any> = Consumer { Log.e("Engine logger", it.toString()) }
+    var log: Consumer<Any> = Consumer { Log.e("Engine logger", it.toString()) }
 
     /**
      * Execute api calls and create the necessary data for the [EngineRepository.paymentRepository]
+     * These are:
+     * [PaylikeCardDto],
+     * [PaymentIntegrationDto]
+     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
      */
-    suspend fun createPaymentDataDto(cardNumber: String, cvc: String, month: Int, year: Int) {
+    suspend fun initializePaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -56,9 +64,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             val paylikeCardDto: PaylikeCardDto
             coroutineScope {
                 val cardNumberToken = async {
-                    apiService.tokenize(TokenizeData(TokenizeTypes.PCN, cardNumber))
+                    apiClient.tokenize(TokenizeData(TokenizeTypes.PCN, cardNumber))
                 }
-                val cvcToken = async { apiService.tokenize(TokenizeData(TokenizeTypes.PCSC, cvc)) }
+                val cvcToken = async { apiClient.tokenize(TokenizeData(TokenizeTypes.PCSC, cvc)) }
                 paylikeCardDto =
                     PaylikeCardDto(
                         cardNumberToken.await(),
@@ -73,28 +81,73 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers()
+            this.notifyObservers(currentState)
+        }
+    }
+
+    /**
+     * These fields describe the payment characteristics.
+     * To set up check the api docs below.
+     * @param paymentAmount define a single payment amount
+     * @param paymentPlanDataList define reoccurring payments
+     * @param paymentUnplannedData define TODO()
+     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
+     */
+    fun addPaymentDescriptionData(
+        paymentAmount: PaymentAmount? = null,
+        paymentPlanDataList: List<PaymentPlanDto>? = null,
+        paymentUnplannedData: PaymentUnplannedDto? = null,
+        paymentTestData: PaymentTestDto? = null,
+    ) {
+        try {
+        isPaymentDataInitialized()
+        repository.paymentRepository =
+                repository.paymentRepository!!.copy(
+                    amount = paymentAmount,
+                    plan = paymentPlanDataList,
+                    unplanned = paymentUnplannedData,
+                    test = paymentTestData,
+                )
+        } catch (e: Exception) {
+            setErrorState(e)
+            this.notifyObservers(currentState)
+        }
+    }
+
+    /**
+     * These field are optional to define.
+     * @param textData is a simple text shown on the paylike dashboard
+     * @param customData is a custom Json object defined by the user
+     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
+     */
+    fun addPaymentAdditionalData(
+        textData: String? = null,
+        customData: JsonObject? = null,
+    ) {
+        try {
+            isPaymentDataInitialized()
+        repository.paymentRepository =
+            repository.paymentRepository!!.copy(
+                text = textData,
+                custom = customData,
+            )
+        } catch (e: Exception) {
+            setErrorState(e)
+            this.notifyObservers(currentState)
         }
     }
 
     /** Start function for a payment flow */
-    suspend fun startPayment(paymentAmount: PaymentAmount, paymentTestDto: PaymentTestDto?) {
+    suspend fun startPayment() {
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
-            repository.paymentRepository =
-                repository.paymentRepository!!.copy(
-                    amount = paymentAmount,
-                    test = paymentTestDto,
-                )
+            isPaymentDataInitialized()
+            isNumberOfHintsRight()
             val response = payment()
-            repository.paymentRepository!!.hints =
-                repository.paymentRepository!!
-                    .hints
-                    .union(response.paymentResponse.hints ?: emptyList())
-                    .toList()
+            addHintsToRepository(response.paymentResponse.hints)
             if (response.isHTML) {
                 repository.htmlRepository = response.htmlBody
                 currentState = EngineState.WEBVIEW_CHALLENGE_STARTED
@@ -104,14 +157,14 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     currentState = EngineState.SUCCESS
                 } else {
                     throw NoTransactionIdAvailableException(
-                        "No transactionId was found in response."
+                        "No transactionId or AuthorizationId was found in response."
                     )
                 }
             }
         } catch (e: Exception) {
             setErrorState(e)
         } finally {
-            this.notifyObservers()
+            this.notifyObservers(currentState)
         }
     }
 
@@ -122,18 +175,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 validState = EngineState.WEBVIEW_CHALLENGE_STARTED,
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
-            if (repository.paymentRepository!!.hints.size != 6) {
-                throw WrongAmountOfHintsException(
-                    6,
-                    repository.paymentRepository!!.hints.size,
-                )
-            }
+            isNumberOfHintsRight()
             val response = payment()
-            repository.paymentRepository!!.hints =
-                repository.paymentRepository!!
-                    .hints
-                    .union(response.paymentResponse.hints ?: emptyList())
-                    .toList()
+            addHintsToRepository(response.paymentResponse.hints)
             if (response.isHTML) {
                 repository.htmlRepository = response.htmlBody
                 currentState = EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED
@@ -143,14 +187,14 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     currentState = EngineState.SUCCESS
                 } else {
                     throw NoTransactionIdAvailableException(
-                        "No transactionId was found in response."
+                        "No transactionId or AuthorizationId was found in response."
                     )
                 }
             }
         } catch (e: Exception) {
             setErrorState(e)
         } finally {
-            this.notifyObservers()
+            this.notifyObservers(currentState)
         }
     }
 
@@ -161,18 +205,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 validState = EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED,
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
-            if (repository.paymentRepository!!.hints.size != 8) {
-                throw WrongAmountOfHintsException(
-                    8,
-                    repository.paymentRepository!!.hints.size,
-                )
-            }
+            isNumberOfHintsRight()
             val response = payment()
-            repository.paymentRepository!!.hints =
-                repository.paymentRepository!!
-                    .hints
-                    .union(response.paymentResponse.hints ?: emptyList())
-                    .toList()
+            addHintsToRepository(response.paymentResponse.hints)
             if (response.isHTML) {
                 throw HtmlResponseException("Response should not be HTML anymore")
             } else {
@@ -191,7 +226,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         } catch (e: Exception) {
             setErrorState(e)
         } finally {
-            this.notifyObservers()
+            this.notifyObservers(currentState)
         }
     }
 
@@ -204,10 +239,27 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             transactionId = null
         }
         error = null
-        this.notifyObservers()
+        this.notifyObservers(currentState)
     }
 
-    /** Checks if we are in the valid state, if not throw exception */
+    /**
+     * Checks if the necessary data are all set
+     * These are:
+     * [PaylikeCardDto]
+     * [PaymentIntegrationDto]
+     * @throws [PaymentDataIsNotInitialized]
+     */
+    private fun isPaymentDataInitialized() {
+        if (repository.paymentRepository == null) {
+            throw InvalidEngineStateException(
+                "Payment data is not initialized. "
+            )
+        }
+    }
+
+    /** Checks if we are in the valid state, if not throw exception
+     * @throws [InvalidEngineStateException]
+     */
     private fun checkValidState(validState: EngineState, callerFun: String) {
         if (currentState != validState) {
             throw InvalidEngineStateException(
@@ -216,7 +268,34 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
-    /** Internal function to execute api call respecting [ApiMode] state */
+    /**
+     * Checks the number of hints saved in repository
+     * @throws [WrongAmountOfHintsException]
+     */
+    private fun isNumberOfHintsRight() {
+        if (repository.paymentRepository!!.hints.size != StatesMapToExpectedHintNumbers[currentState])
+        {
+            throw WrongAmountOfHintsException(
+                StatesMapToExpectedHintNumbers[currentState]!!,
+                repository.paymentRepository!!.hints.size,
+            )
+        }
+    }
+
+    /**
+     * Concatenates newly received hints to the repository
+     */
+    private fun addHintsToRepository(listToAdd: List<String>?) {
+        repository.paymentRepository!!.hints =
+            repository.paymentRepository!!
+                .hints
+                .union(listToAdd ?: emptyList())
+                .toList()
+    }
+
+    /** Internal function to execute api call respecting [ApiMode] state
+     * @throws [InvalidPaymentDataException]
+     */
     private suspend fun payment(): PaylikeClientResponse {
         if (repository.paymentRepository == null) {
             throw InvalidPaymentDataException(
@@ -225,7 +304,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
         if (
             repository.paymentRepository?.integration == null ||
-                repository.paymentRepository?.card == null
+            repository.paymentRepository?.card == null
         ) {
             throw InvalidPaymentDataException("PaymentBody is not valid.")
         }
@@ -237,10 +316,10 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             response =
                 when (apiMode) {
                     ApiMode.LIVE -> {
-                        apiService.paymentCreate(repository.paymentRepository!!)
+                        apiClient.paymentCreate(repository.paymentRepository!!)
                     }
                     ApiMode.TEST -> {
-                        apiService.paymentCreate(repository.paymentRepository!!)
+                        apiClient.paymentCreate(repository.paymentRepository!!)
                     }
                 }
         }
@@ -276,12 +355,8 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         currentState = EngineState.ERROR
     }
 
-    override fun notifyObservers() {
-        this.setChanged()
-        notifyObservers(currentState)
-    }
-
     override fun notifyObservers(arg: Any?) {
+        this.setChanged()
         super.notifyObservers(arg)
     }
 }

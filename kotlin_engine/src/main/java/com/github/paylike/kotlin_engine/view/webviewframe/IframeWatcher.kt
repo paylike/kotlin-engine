@@ -1,4 +1,4 @@
-package com.github.paylike.kotlin_engine.view.utils
+package com.github.paylike.kotlin_engine.view.webviewlistener
 
 /** Utility const val to help the tds flow through the webview interactions. */
 const val IframeWatcher: String =

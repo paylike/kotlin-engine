@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
-import com.github.paylike.kotlin_engine.view.utils.HintsListener
-import com.github.paylike.kotlin_engine.view.utils.IframeWatcher
+import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
+import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import kotlinx.coroutines.*
@@ -20,7 +20,7 @@ import java.util.*
 
 /** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
-    val shouldWebviewRender = mutableStateOf(false)
+    val shouldRenderWebview = mutableStateOf(false)
     private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
         if (isReady) {
@@ -44,6 +44,15 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         engine.addObserver(this)
     }
 
+    fun changeIframeContent(to: String): String = """
+        var iframe = document.getElementById('tdsiframe');
+        iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
+        iframe.document.open();
+        window.iframeContent = `${Base64.encodeToString(to.toByteArray(), Base64.DEFAULT)}`;
+        iframe.document.write(window.b64Decoder(window.iframeContent));
+        iframe.document.close();
+        """
+
     /**
      * Observer update function overload Sets the visibility and content of the [WebviewComposable]
      * based on the provided [EngineState]
@@ -66,19 +75,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            """
-                            var iframe = document.getElementById('tdsiframe');
-                            iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
-                            iframe.document.open();
-                            window.iframeContent = `${
-                                Base64.encodeToString(
-                                    engine.repository.htmlRepository?.toByteArray(),
-                                    Base64.DEFAULT
-                                )
-                            }`;
-                            iframe.document.write(window.b64Decoder(window.iframeContent));
-                            iframe.document.close();
-                            """,
+                            changeIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
@@ -88,29 +85,17 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            """
-                            var iframe = document.getElementById('tdsiframe');
-                            iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
-                            iframe.document.open();
-                            window.iframeContent = `${
-                                Base64.encodeToString(
-                                    engine.repository.htmlRepository?.toByteArray(),
-                                    Base64.DEFAULT
-                                )
-                            }`;
-                            iframe.document.write(window.b64Decoder(window.iframeContent));
-                            iframe.document.close();
-                            """,
+                            changeIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
                 }
             }
             EngineState.SUCCESS -> {
-                shouldWebviewRender.value = false
+                shouldRenderWebview.value = false
             }
             EngineState.ERROR -> {
-                shouldWebviewRender.value = false
+                shouldRenderWebview.value = false
             }
         }
     }

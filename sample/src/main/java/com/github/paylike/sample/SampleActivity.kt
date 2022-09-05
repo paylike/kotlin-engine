@@ -28,7 +28,7 @@ import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.sample.ui.theme.PaylikeTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 /**
  * Sample activity to demonstrate Paylike payment method with Compose
@@ -72,7 +72,7 @@ fun SampleScreen(engine: PaylikeEngine, ) {
     engine.addObserver(statesListener)
 
     val webview = PaylikeWebview(engine)
-    val shouldWebviewRender = remember { webview.shouldWebviewRender }
+    val shouldWebviewRender = remember { webview.shouldRenderWebview }
 
     if (error.value != null) {
         Toast.makeText(LocalContext.current, error.value!!.message, Toast.LENGTH_LONG).show()
@@ -129,13 +129,22 @@ fun PayButton(
     Button(
         onClick = {
             engine.resetEngineStates()
-            webview.shouldWebviewRender.value = true
-            CoroutineScope(Dispatchers.IO).async {
-                engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
-                engine.startPayment(
-                    PaymentAmount("EUR", 1, 0),
-                    PaymentTestDto()
+            webview.shouldRenderWebview.value = true
+            CoroutineScope(Dispatchers.IO).launch {
+                engine.initializePaymentData(
+                    "4012111111111111",
+                    "111",
+                    11,
+                    2023
                 )
+                engine.addPaymentDescriptionData(
+                    paymentAmount = PaymentAmount("EUR", 1, 0),
+                    paymentTestData = PaymentTestDto()
+                    )
+                engine.addPaymentAdditionalData(
+                    textData = "Hello from android client"
+                )
+                engine.startPayment()
             }
         },
     ) {

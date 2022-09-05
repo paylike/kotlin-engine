@@ -1,12 +1,15 @@
 package com.github.paylike.kotlin_engine.error.exceptions
 
+import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
+
+
 /** Thrown when one of the engine payment functions (
- * [com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine.createPaymentDataDto],
- * [com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine.startPayment],
- * [com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine.continuePayment],
- * [com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine.finishPayment]
+ * [PaylikeEngine.initializePaymentData],
+ * [PaylikeEngine.startPayment],
+ * [PaylikeEngine.continuePayment],
+ * [PaylikeEngine.finishPayment]
  * )
  * is unexpectedly invoked in the wrong engine state
- * @see com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
+ * @see PaylikeEngine
  * */
 class InvalidEngineStateException(override val message: String) : EngineException()
