@@ -123,7 +123,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
             if (repository.paymentRepository!!.hints.size != 6) {
-                throw NotRightAmountOfHintsFoundException(
+                throw WrongAmountOfHintsException(
                     6,
                     repository.paymentRepository!!.hints.size,
                 )
@@ -162,7 +162,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 callerFun = object {}.javaClass.enclosingMethod?.name!!
             )
             if (repository.paymentRepository!!.hints.size != 8) {
-                throw NotRightAmountOfHintsFoundException(
+                throw WrongAmountOfHintsException(
                     8,
                     repository.paymentRepository!!.hints.size,
                 )
