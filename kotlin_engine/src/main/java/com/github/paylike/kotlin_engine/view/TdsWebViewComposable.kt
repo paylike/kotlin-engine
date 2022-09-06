@@ -1,7 +1,6 @@
 package com.github.paylike.kotlin_engine.view
 
 import android.annotation.SuppressLint
-import android.util.Base64
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -11,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
+import com.github.paylike.kotlin_engine.view.webviewframe.injectIframeContent
 import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
 import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
@@ -44,15 +44,6 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         engine.addObserver(this)
     }
 
-    fun changeIframeContent(to: String): String = """
-        var iframe = document.getElementById('tdsiframe');
-        iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
-        iframe.document.open();
-        window.iframeContent = `${Base64.encodeToString(to.toByteArray(), Base64.DEFAULT)}`;
-        iframe.document.write(window.b64Decoder(window.iframeContent));
-        iframe.document.close();
-        """
-
     /**
      * Observer update function overload Sets the visibility and content of the [WebviewComposable]
      * based on the provided [EngineState]
@@ -75,7 +66,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            changeIframeContent(to = engine.repository.htmlRepository?: ""),
+                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
@@ -85,7 +76,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            changeIframeContent(to = engine.repository.htmlRepository?: ""),
+                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
