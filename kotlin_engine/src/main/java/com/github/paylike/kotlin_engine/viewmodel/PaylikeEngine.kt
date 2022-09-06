@@ -48,7 +48,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * These are:
      * [PaylikeCardDto],
      * [PaymentIntegrationDto]
-     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
+     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
      */
     suspend fun initializePaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
         try {
@@ -90,8 +90,8 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * To set up check the api docs below.
      * @param paymentAmount define a single payment amount
      * @param paymentPlanDataList define reoccurring payments
-     * @param paymentUnplannedData define TODO()
-     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
+     * @param paymentUnplannedData define the types of unplanned payments the card will be used for
+     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
      */
     fun addPaymentDescriptionData(
         paymentAmount: PaymentAmount? = null,
@@ -118,7 +118,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * These field are optional to define.
      * @param textData is a simple text shown on the paylike dashboard
      * @param customData is a custom Json object defined by the user
-     * @see <a href="https://github.com/paylike/api-docs">Api Docs</a>
+     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
      */
     fun addPaymentAdditionalData(
         textData: String? = null,
