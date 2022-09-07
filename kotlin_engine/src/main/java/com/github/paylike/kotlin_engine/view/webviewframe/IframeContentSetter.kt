@@ -2,7 +2,7 @@ package com.github.paylike.kotlin_engine.view.webviewframe
 
 import android.util.Base64
 
-fun injectIframeContent(to: String): String =
+fun setIframeContent(to: String): String =
     """
         var iframe = document.getElementById('tdsiframe');
         iframe = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);

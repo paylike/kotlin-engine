@@ -11,10 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,10 +24,11 @@ import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.view.PaylikeWebview
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
-import com.github.paylike.sample.ui.theme.PaylikeTheme
+import com.github.paylike.sample.view.theme.PaylikeTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.*
 
 /**
  * Sample activity to demonstrate Paylike payment method with Compose
@@ -38,7 +36,7 @@ import kotlinx.coroutines.launch
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val engine = PaylikeEngine(BuildConfig.PaylikeMerchantApiKey, ApiMode.TEST)
+        val engine = PaylikeEngine("e393f9ec-b2f7-4f81-b455-ce45b02d355d", ApiMode.TEST)
         setContent {
             SampleScaffold(engine)
         }
@@ -63,6 +61,33 @@ fun SampleScaffold(engine: PaylikeEngine) {
     }
 }
 
+/**
+ * Helper class to help listen to specific engine states along the tds flow
+ */
+class StatesListener(
+    private val hints: MutableState<String>,
+    private val transactionId: MutableState<String>,
+    private val error: MutableState<PaylikeEngineError?>,
+) : Observer {
+    override fun update(p0: Observable?, p1: Any?) {
+        if (p0 is PaylikeEngine) {
+            if (p0.repository.paymentRepository != null) {
+                hints.value = p0.repository.paymentRepository!!.hints.size.toString()
+            } else {
+                hints.value = "0"
+            }
+            transactionId.value = p0.repository.transactionId?: "No transaction id yet"
+            error.value = p0.error
+        }
+        else {
+            val observableClassName: String = if (p0 != null) {
+                p0::class.simpleName!!
+            } else { "Anonymous" }
+            throw Exception("StatesListener is listening to something unexpected: $observableClassName")
+        }
+    }
+}
+
 @Composable
 fun SampleScreen(engine: PaylikeEngine, ) {
     val errorMutableState: PaylikeEngineError? = null
@@ -70,8 +95,8 @@ fun SampleScreen(engine: PaylikeEngine, ) {
 
     val hintsText = remember { mutableStateOf("0") }
     val transactionID = remember { mutableStateOf("No transaction id yet") }
-    val statesListener = StatesListener(hintsText, transactionID, error)
     DisposableEffect(LocalLifecycleOwner.current) {
+        val statesListener = StatesListener(hintsText, transactionID, error)
         engine.addObserver(statesListener)
         onDispose {
             engine.deleteObserver(statesListener)

@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
-import com.github.paylike.kotlin_engine.view.webviewframe.injectIframeContent
+import com.github.paylike.kotlin_engine.view.webviewframe.setIframeContent
 import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
 import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
@@ -24,13 +25,13 @@ import java.util.*
 
 /** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
-    val shouldRenderWebview = mutableStateOf(false)
+    private var shouldRenderWebview: MutableState<Boolean> = mutableStateOf(false)
     private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
         if (isReady) {
             webview.post {
                 webview.evaluateJavascript(
-                    injectIframeContent(to = engine.repository.htmlRepository?: ""),
+                    setIframeContent(to = engine.repository.htmlRepository?: ""),
                     null
                 )
             }
@@ -79,7 +80,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
+                            setIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
