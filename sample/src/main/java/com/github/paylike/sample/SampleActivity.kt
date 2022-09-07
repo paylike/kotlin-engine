@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
@@ -69,10 +71,15 @@ fun SampleScreen(engine: PaylikeEngine, ) {
     val hintsText = remember { mutableStateOf("0") }
     val transactionID = remember { mutableStateOf("No transaction id yet") }
     val statesListener = StatesListener(hintsText, transactionID, error)
-    engine.addObserver(statesListener)
-
-    val webview = PaylikeWebview(engine)
-    val shouldWebviewRender = remember { webview.shouldRenderWebview }
+    DisposableEffect(LocalLifecycleOwner.current) {
+        engine.addObserver(statesListener)
+        onDispose {
+            engine.deleteObserver(statesListener)
+        }
+    }
+    val webview = remember {
+        mutableStateOf(PaylikeWebview(engine))
+    }
 
     if (error.value != null) {
         Toast.makeText(LocalContext.current, error.value!!.message, Toast.LENGTH_LONG).show()
@@ -102,18 +109,14 @@ fun SampleScreen(engine: PaylikeEngine, ) {
             )
         }
         item {
-            if (shouldWebviewRender.value) {
-                webview.WebviewComposable(
-                    modifier = Modifier
-                        .fillMaxWidth(1f)
-                        .height(300.dp)
-                )
-            } else {
-                PayButton(
-                    engine,
-                    webview,
-                )
-            }
+            webview.value.WebviewComposable(
+                modifier = Modifier
+                    .fillMaxWidth(1f)
+                    .height(300.dp)
+            )
+            PayButton(
+                engine,
+            )
         }
     }
 }
@@ -124,12 +127,10 @@ fun SampleScreen(engine: PaylikeEngine, ) {
 @Composable
 fun PayButton(
     engine: PaylikeEngine,
-    webview: PaylikeWebview
 ) {
     Button(
         onClick = {
             engine.resetEngineStates()
-            webview.shouldRenderWebview.value = true
             CoroutineScope(Dispatchers.IO).launch {
                 engine.initializePaymentData(
                     "4012111111111111",

@@ -4,9 +4,13 @@ import android.annotation.SuppressLint
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
@@ -24,6 +28,12 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
         if (isReady) {
+            webview.post {
+                webview.evaluateJavascript(
+                    injectIframeContent(to = engine.repository.htmlRepository?: ""),
+                    null
+                )
+            }
             return@HintsListener
         }
         engine.repository.paymentRepository!!.hints =
@@ -63,14 +73,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 webviewListener.resetHints()
             }
             EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                MainScope().launch {
-                    webview.post {
-                        webview.evaluateJavascript(
-                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
-                            null
-                        )
-                    }
-                }
+                shouldRenderWebview.value = true
             }
             EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
                 MainScope().launch {
@@ -95,11 +98,11 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
     fun WebviewComposable(modifier: Modifier = Modifier) {
-        AndroidView(
-            modifier = modifier,
-            factory = {
-                webview =
-                    WebView(it).apply {
+        if (shouldRenderWebview.value) {
+            AndroidView(
+                modifier = modifier,
+                factory = {
+                    webview = WebView(it).apply {
                         layoutParams =
                             ViewGroup.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -121,8 +124,11 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                             WebView.setWebContentsDebuggingEnabled(true)
                         }
                     }
-                webview
-            }
-        )
+                    webview
+                }
+            )
+        } else {
+            Box(modifier = Modifier.size(0.dp))
+        }
     }
 }

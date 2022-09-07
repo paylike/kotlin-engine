@@ -51,6 +51,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
      */
     suspend fun initializePaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
+        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -99,15 +100,16 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         paymentUnplannedData: PaymentUnplannedDto? = null,
         paymentTestData: PaymentTestDto? = null,
     ) {
+        if (currentState == EngineState.ERROR) return
         try {
-        isPaymentDataInitialized()
-        repository.paymentRepository =
-                repository.paymentRepository!!.copy(
-                    amount = paymentAmount,
-                    plan = paymentPlanDataList,
-                    unplanned = paymentUnplannedData,
-                    test = paymentTestData,
-                )
+            isPaymentDataInitialized()
+            repository.paymentRepository =
+                    repository.paymentRepository!!.copy(
+                        amount = paymentAmount,
+                        plan = paymentPlanDataList,
+                        unplanned = paymentUnplannedData,
+                        test = paymentTestData,
+                    )
         } catch (e: Exception) {
             setErrorState(e)
             this.notifyObservers(currentState)
@@ -124,6 +126,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         textData: String? = null,
         customData: JsonObject? = null,
     ) {
+        if (currentState == EngineState.ERROR) return
         try {
             isPaymentDataInitialized()
         repository.paymentRepository =
@@ -139,6 +142,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /** Start function for a payment flow */
     suspend fun startPayment() {
+        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -232,6 +236,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /** Resets the [repository], [currentState] and [error] */
     fun resetEngineStates() {
+        if (currentState == EngineState.WAITING_FOR_INPUT) return
         currentState = EngineState.WAITING_FOR_INPUT
         repository.apply {
             paymentRepository = null
