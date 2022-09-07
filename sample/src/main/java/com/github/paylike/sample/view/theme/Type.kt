@@ -1,4 +1,4 @@
-package com.github.paylike.sample.ui.theme
+package com.github.paylike.sample.view.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle

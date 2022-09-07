@@ -5,12 +5,11 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
-import com.github.paylike.kotlin_engine.view.webviewframe.injectIframeContent
+import com.github.paylike.kotlin_engine.view.webviewframe.setIframeContent
 import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
 import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
@@ -20,7 +19,6 @@ import java.util.*
 
 /** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
-    val shouldRenderWebview = mutableStateOf(false)
     private lateinit var webview: WebView
     private val webviewListener = HintsListener { hints, isReady ->
         if (isReady) {
@@ -66,7 +64,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
+                            setIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
@@ -76,17 +74,15 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            injectIframeContent(to = engine.repository.htmlRepository?: ""),
+                            setIframeContent(to = engine.repository.htmlRepository?: ""),
                             null
                         )
                     }
                 }
             }
             EngineState.SUCCESS -> {
-                shouldRenderWebview.value = false
             }
             EngineState.ERROR -> {
-                shouldRenderWebview.value = false
             }
         }
     }
@@ -94,7 +90,9 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     /** Webview composable function to execute the tds flow */
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
-    fun WebviewComposable(modifier: Modifier = Modifier) {
+    fun WebviewComposable(
+        modifier: Modifier = Modifier,
+    ) {
         AndroidView(
             modifier = modifier,
             factory = {
@@ -122,7 +120,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                         }
                     }
                 webview
-            }
+            },
         )
     }
 }
