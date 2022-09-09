@@ -15,15 +15,20 @@ plugins {
 	id 'org.jetbrains.kotlin.jvm' version '1.7.0'
 	id 'com.diffplug.spotless' version '6.8.0' apply true
 }
-spotless {
-	kotlin {
-		target 'src/**/*.kt', 'src/**/*.kts'
-		ktfmt().kotlinlangStyle()
-		trimTrailingWhitespace()
-		endWithNewline()
-	}
-	groovyGradle {
-		target '*.gradle'
-		greclipse()
-	}
-}
+
+//allprojects {
+//	configure('kotlin_engine') {
+//		spotless {
+//			kotlin {
+//				target 'src/**/*.kt', 'src/**/*.kts'
+//				ktfmt().kotlinlangStyle()
+//				trimTrailingWhitespace()
+//				endWithNewline()
+//			}
+//			groovyGradle {
+//				target '*.gradle'
+//				greclipse()
+//			}
+//		}
+//	}
+//}

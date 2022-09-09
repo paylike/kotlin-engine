@@ -51,6 +51,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
      */
     suspend fun initializePaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
+        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -81,7 +82,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
@@ -99,18 +99,18 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         paymentUnplannedData: PaymentUnplannedDto? = null,
         paymentTestData: PaymentTestDto? = null,
     ) {
+        if (currentState == EngineState.ERROR) return
         try {
-        isPaymentDataInitialized()
-        repository.paymentRepository =
-                repository.paymentRepository!!.copy(
-                    amount = paymentAmount,
-                    plan = paymentPlanDataList,
-                    unplanned = paymentUnplannedData,
-                    test = paymentTestData,
-                )
+            isPaymentDataInitialized()
+            repository.paymentRepository =
+                    repository.paymentRepository!!.copy(
+                        amount = paymentAmount,
+                        plan = paymentPlanDataList,
+                        unplanned = paymentUnplannedData,
+                        test = paymentTestData,
+                    )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
@@ -124,6 +124,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         textData: String? = null,
         customData: JsonObject? = null,
     ) {
+        if (currentState == EngineState.ERROR) return
         try {
             isPaymentDataInitialized()
         repository.paymentRepository =
@@ -133,12 +134,12 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
     /** Start function for a payment flow */
     suspend fun startPayment() {
+        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -161,10 +162,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
@@ -191,10 +191,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
@@ -223,15 +222,15 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
     /** Resets the [repository], [currentState] and [error] */
     fun resetEngineStates() {
+        if (currentState == EngineState.WAITING_FOR_INPUT) return
         currentState = EngineState.WAITING_FOR_INPUT
         repository.apply {
             paymentRepository = null
@@ -327,7 +326,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /** Sets error corresponding to the cause */
-    private fun setErrorState(e: Exception) {
+    fun setErrorState(e: Exception) {
         when (e::class.superclasses.first()) {
             PaylikeException::class -> {
                 e as PaylikeException
@@ -335,7 +334,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
-                        paylikeException = e
+                        paylikeException = e,
                     )
             }
             EngineException::class -> {
@@ -344,7 +343,16 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
-                        engineException = e
+                        engineException = e,
+                    )
+            }
+            WebViewException::class -> {
+                e as WebViewException
+                log.accept("A webview exception occurred: ${e.message}")
+                error =
+                    PaylikeEngineError(
+                        e.message ?: "No exception message is included.",
+                        webViewException = e,
                     )
             }
             else -> {
@@ -353,6 +361,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             }
         }
         currentState = EngineState.ERROR
+        this.notifyObservers(currentState)
     }
 
     override fun notifyObservers(arg: Any?) {

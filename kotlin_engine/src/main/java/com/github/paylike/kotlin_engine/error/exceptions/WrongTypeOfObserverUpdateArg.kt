@@ -1,7 +1,17 @@
 package com.github.paylike.kotlin_engine.error.exceptions
 
+import com.github.paylike.kotlin_engine.viewmodel.EngineState
+import java.util.*
+
 /**
- * Thrown when [com.github.paylike.kotlin_engine.view.PaylikeWebview]
- * does not get [com.github.paylike.kotlin_engine.viewmodel.EngineState] on arg.
+ * Thrown when [Observer] does not get [EngineState] as [arg].
  */
-class WrongTypeOfObserverUpdateArg(override val message: String) : EngineException()
+class WrongTypeOfObserverUpdateArg(val arg: Any?) : EngineException() {
+    override val message: String = "The argument we got is ${
+        if (arg == null) {
+            "null"
+        } else {
+            arg::class.simpleName
+        }
+    }"
+}
