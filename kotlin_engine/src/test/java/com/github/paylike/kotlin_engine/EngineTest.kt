@@ -6,7 +6,8 @@ import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import com.github.paylike.kotlin_money.PaymentAmount
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EngineTest {
@@ -14,7 +15,7 @@ class EngineTest {
     fun tokenizeTest() {
         val engine = PaylikeEngine("testId01", ApiMode.TEST)
         runBlocking {
-            engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
+            engine.initializePaymentData("4012111111111111", "111", 11, 2023)
             assertTrue(engine.repository.paymentRepository!!.card.number.token.isNotEmpty())
             assertEquals(
                 TokenizedResponse::class.java,
@@ -35,8 +36,8 @@ class EngineTest {
         val paymentAmount = PaymentAmount("EUR", 1, 0)
         val paymentTestDto = PaymentTestDto()
         runBlocking {
-            engine.createPaymentDataDto("4012111111111111", "111", 11, 2023)
-            engine.startPayment(paymentAmount, paymentTestDto)
+            engine.initializePaymentData("4012111111111111", "111", 11, 2023)
+            engine.startPayment()
             println(engine.repository.htmlRepository)
         }
     }

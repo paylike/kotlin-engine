@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.github.paylike.sample">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <application android:allowBackup="true">
+    <application android:allowBackup="true"
+        tools:ignore="MissingApplicationIcon">
         <activity
-            android:name=".SampleActivity"
+            android:name=".view.SampleActivity"
             android:exported="true"
             android:label="@string/title_activity_sample"
             android:theme="@style/Theme.Kotlin_engine"

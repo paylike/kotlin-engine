@@ -82,7 +82,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
@@ -112,7 +111,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
@@ -136,7 +134,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             )
         } catch (e: Exception) {
             setErrorState(e)
-            this.notifyObservers(currentState)
         }
     }
 
@@ -165,10 +162,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
@@ -195,10 +191,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
@@ -227,10 +222,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                     )
                 }
             }
+            this.notifyObservers(currentState)
         } catch (e: Exception) {
             setErrorState(e)
-        } finally {
-            this.notifyObservers(currentState)
         }
     }
 
@@ -332,7 +326,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /** Sets error corresponding to the cause */
-    private fun setErrorState(e: Exception) {
+    fun setErrorState(e: Exception) {
         when (e::class.superclasses.first()) {
             PaylikeException::class -> {
                 e as PaylikeException
@@ -340,7 +334,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
-                        paylikeException = e
+                        paylikeException = e,
                     )
             }
             EngineException::class -> {
@@ -349,7 +343,16 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
                 error =
                     PaylikeEngineError(
                         e.message ?: "No exception message is included.",
-                        engineException = e
+                        engineException = e,
+                    )
+            }
+            WebViewException::class -> {
+                e as WebViewException
+                log.accept("A webview exception occurred: ${e.message}")
+                error =
+                    PaylikeEngineError(
+                        e.message ?: "No exception message is included.",
+                        webViewException = e,
                     )
             }
             else -> {
@@ -358,6 +361,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
             }
         }
         currentState = EngineState.ERROR
+        this.notifyObservers(currentState)
     }
 
     override fun notifyObservers(arg: Any?) {
