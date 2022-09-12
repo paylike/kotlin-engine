@@ -23,68 +23,50 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Sample activity to demonstrate Paylike payment method with Compose
- */
+/** Sample activity to demonstrate Paylike payment method with Compose */
 class SampleActivity : ComponentActivity() {
-    /**
-     * Injected viewModel handling the intermediate role of MVVM architecture.
-     */
+    /** Injected viewModel handling the intermediate role of MVVM architecture. */
     private val sampleViewModel: SampleViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            /**
-             * Sample UI implementation
-             */
+            /** Sample UI implementation */
             SampleComposable(sampleViewModel)
         }
     }
 }
 
 /**
- * Single composable consisting every external component to set up the UI for the sample.
- * Features: shows hints counter, shows transactionId if any,
- * handles scaffold frame and state, shows error message if any.
+ * Single composable consisting every external component to set up the UI for the sample. Features:
+ * shows hints counter, shows transactionId if any, handles scaffold frame and state, shows error
+ * message if any.
  */
 @Composable
 fun SampleComposable(viewModel: SampleViewModel) {
-    /**
-     * Custom theme to demonstrate paylike-ish environment
-     */
+    /** Custom theme to demonstrate paylike-ish environment */
     PaylikeTheme {
-        /**
-         * Remembering the local compose states
-         */
+        /** Remembering the local compose states */
         val scaffoldState = rememberScaffoldState()
         val uiState = remember { viewModel.uiState }
 
-        /**
-         * Remembering the webview state
-         */
-        val webview = remember {
-            mutableStateOf(PaylikeWebview(viewModel.paylikeEngine))
-        }
+        /** Remembering the webview state */
+        val webview = remember { mutableStateOf(PaylikeWebview(viewModel.paylikeEngine)) }
 
-        /**
-         * Scaffold frame
-         */
+        /** Scaffold frame */
         Scaffold(
-            topBar = { TopAppBar(
-                title = { Text("Pay with PayLike") },
-            )  },
+            topBar = {
+                TopAppBar(
+                    title = { Text("Pay with PayLike") },
+                )
+            },
             scaffoldState = scaffoldState,
             content = { padding ->
                 Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     color = MaterialTheme.colors.background
                 ) {
-                    /**
-                     * Displays a snackBar with the recently received error message.
-                     */
+                    /** Displays a snackBar with the recently received error message. */
                     if (uiState.errorInstance.value != null) {
                         uiState.errorInstance.value?.let {
                             LaunchedEffect(scaffoldState.snackbarHostState) {
@@ -97,12 +79,12 @@ fun SampleComposable(viewModel: SampleViewModel) {
                     }
 
                     /**
-                     * Arranges the UI elements of the sample application.
-                     * 1st: textField showing the actual number of hints saved,
-                     * 2nd: textField showing the transactionId if any,
-                     * 3rd: the webview managing the the TDS flow, it"s render is set internally,
-                     * 4th: [PayButton] initializing a hardwired simple payment flow,
-                     * 5th: [ResetButton] resetting the engine to be able to reinitialise the payment flow.
+                     * Arranges the UI elements of the sample application. 1st: textField showing
+                     * the actual number of hints saved, 2nd: textField showing the transactionId if
+                     * any, 3rd: the webview managing the the TDS flow, it"s render is set
+                     * internally, 4th: [PayButton] initializing a hardwired simple payment flow,
+                     * 5th: [ResetButton] resetting the engine to be able to reinitialise the
+                     * payment flow.
                      */
                     Column(
                         Modifier.fillMaxSize(),
@@ -110,32 +92,20 @@ fun SampleComposable(viewModel: SampleViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            modifier = Modifier
-                                .fillMaxWidth(1f)
-                                .height(30.dp),
+                            modifier = Modifier.fillMaxWidth(1f).height(30.dp),
                             text = uiState.numberOfHints.value,
                             textAlign = TextAlign.Center,
                         )
                         Text(
-                            modifier = Modifier
-                                .fillMaxWidth(1f)
-                                .height(30.dp),
+                            modifier = Modifier.fillMaxWidth(1f).height(30.dp),
                             text = uiState.transactionId.value,
                             textAlign = TextAlign.Center,
                         )
                         webview.value.WebviewComposable(
-                            modifier = Modifier
-                                .fillMaxWidth(1f)
-                                .height(300.dp)
+                            modifier = Modifier.fillMaxWidth(1f).height(300.dp)
                         )
-                        PayButton(
-                            viewModel,
-                            uiState.shouldRenderPayButton.value
-                        )
-                        ResetButton(
-                            viewModel,
-                            uiState.shouldRenderResetButton.value
-                        )
+                        PayButton(viewModel, uiState.shouldRenderPayButton.value)
+                        ResetButton(viewModel, uiState.shouldRenderResetButton.value)
                     }
                 }
             },
@@ -143,9 +113,7 @@ fun SampleComposable(viewModel: SampleViewModel) {
     }
 }
 
-/**
- * Initializing a hardwired simple payment flow
- */
+/** Initializing a hardwired simple payment flow */
 @Composable
 fun PayButton(
     viewModel: SampleViewModel,
@@ -177,9 +145,7 @@ fun PayButton(
     }
 }
 
-/**
- * Resetting the engine to be able to reinitialise the payment flow.
- */
+/** Resetting the engine to be able to reinitialise the payment flow. */
 @Composable
 fun ResetButton(
     viewModel: SampleViewModel,
@@ -192,8 +158,6 @@ fun ResetButton(
                     viewModel.paylikeEngine.resetEngineStates()
                 }
             }
-        ) {
-            Text(text = "Reset")
-        }
+        ) { Text(text = "Reset") }
     }
 }

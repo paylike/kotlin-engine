@@ -23,25 +23,23 @@ import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
 import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
+import java.util.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import java.util.*
 
 /** Wrapper class for webview composable and its helper functions */
 class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
     private var shouldRenderWebview: MutableState<Boolean> = mutableStateOf(false)
     private lateinit var webview: WebView
 
-    /**
-     * Listens to the postMessages of the webview.
-     */
+    /** Listens to the postMessages of the webview. */
     private val webviewListener = HintsListener { hints, isReady ->
         if (isReady) {
             webview.post {
                 webview.evaluateJavascript(
-                    setIframeContent(to = engine.repository.htmlRepository?: ""),
+                    setIframeContent(to = engine.repository.htmlRepository ?: ""),
                     null
                 )
             }
@@ -73,7 +71,12 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         if (o !is PaylikeEngine) {
             throw WrongTypeOfObservableListened(
                 observer = this::class.simpleName!!,
-                observable = if (o != null) { o::class.simpleName!! } else { "Anonymous" },
+                observable =
+                    if (o != null) {
+                        o::class.simpleName!!
+                    } else {
+                        "Anonymous"
+                    },
             )
         }
         if (arg !is EngineState) {
@@ -90,7 +93,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 MainScope().launch {
                     webview.post {
                         webview.evaluateJavascript(
-                            setIframeContent(to = engine.repository.htmlRepository?: ""),
+                            setIframeContent(to = engine.repository.htmlRepository ?: ""),
                             null
                         )
                     }
@@ -113,39 +116,43 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
             AndroidView(
                 modifier = modifier,
                 factory = {
-                    webview = WebView(it).apply {
-                        layoutParams =
-                            ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                        webViewClient = object : WebViewClient() {
-                            override fun onReceivedError(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                                error: WebResourceError?
-                            ) {
-                                super.onReceivedError(view, request, error)
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    engine.setErrorState(ReceivedWebViewErrorException(error))
+                    webview =
+                        WebView(it).apply {
+                            layoutParams =
+                                ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                            webViewClient =
+                                object : WebViewClient() {
+                                    override fun onReceivedError(
+                                        view: WebView?,
+                                        request: WebResourceRequest?,
+                                        error: WebResourceError?
+                                    ) {
+                                        super.onReceivedError(view, request, error)
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            engine.setErrorState(
+                                                ReceivedWebViewErrorException(error)
+                                            )
+                                        }
+                                    }
                                 }
+                            this.addJavascriptInterface(webviewListener, "PaylikeWebviewListener")
+                            loadDataWithBaseURL(
+                                "https:///b.paylike.io",
+                                IframeWatcher,
+                                "text/html",
+                                "utf-8",
+                                null
+                            )
+
+                            settings.javaScriptEnabled = true
+                            settings.allowContentAccess = true
+                            if (BuildConfig.DEBUG) {
+                                WebView.setWebContentsDebuggingEnabled(true)
                             }
                         }
-                        this.addJavascriptInterface(webviewListener, "PaylikeWebviewListener")
-                        loadDataWithBaseURL(
-                            "https:///b.paylike.io",
-                            IframeWatcher,
-                            "text/html",
-                            "utf-8",
-                            null
-                        )
-
-                        settings.javaScriptEnabled = true
-                        settings.allowContentAccess = true
-                        if (BuildConfig.DEBUG) {
-                            WebView.setWebContentsDebuggingEnabled(true)
-                        }
-                    }
                     webview
                 }
             )

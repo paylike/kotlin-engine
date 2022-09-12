@@ -4,8 +4,8 @@ import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import java.util.*
 
 /**
- * Thrown when any class that implements [Observer] and listens to a [Observable]
- * and [Observable] is not [PaylikeEngine].
+ * Thrown when any class that implements [Observer] and listens to a [Observable] and [Observable]
+ * is not [PaylikeEngine].
  */
 class WrongTypeOfObservableListened(
     observer: String,

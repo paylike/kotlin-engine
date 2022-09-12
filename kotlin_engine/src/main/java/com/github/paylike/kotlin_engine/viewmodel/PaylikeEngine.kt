@@ -19,16 +19,14 @@ import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
 import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.serialization.json.JsonObject
 import java.util.*
 import java.util.function.Consumer
 import kotlin.reflect.full.superclasses
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonObject
 
-/** Paylike engine
- * Observable wrapper class to support Paylike transactions towards the API
- */
+/** Paylike engine Observable wrapper class to support Paylike transactions towards the API */
 class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode) : Observable() {
 
     val repository: EngineRepository = EngineRepository()
@@ -45,10 +43,10 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /**
      * Execute api calls and create the necessary data for the [EngineRepository.paymentRepository]
-     * These are:
-     * [PaylikeCardDto],
-     * [PaymentIntegrationDto]
-     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
+     * These are: [PaylikeCardDto], [PaymentIntegrationDto]
+     * @see <a
+     * href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api
+     * Docs</a>
      */
     suspend fun initializePaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
         if (currentState == EngineState.ERROR) return
@@ -86,12 +84,13 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /**
-     * These fields describe the payment characteristics.
-     * To set up check the api docs below.
+     * These fields describe the payment characteristics. To set up check the api docs below.
      * @param paymentAmount define a single payment amount
      * @param paymentPlanDataList define reoccurring payments
      * @param paymentUnplannedData define the types of unplanned payments the card will be used for
-     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
+     * @see <a
+     * href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api
+     * Docs</a>
      */
     fun addPaymentDescriptionData(
         paymentAmount: PaymentAmount? = null,
@@ -103,12 +102,12 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         try {
             isPaymentDataInitialized()
             repository.paymentRepository =
-                    repository.paymentRepository!!.copy(
-                        amount = paymentAmount,
-                        plan = paymentPlanDataList,
-                        unplanned = paymentUnplannedData,
-                        test = paymentTestData,
-                    )
+                repository.paymentRepository!!.copy(
+                    amount = paymentAmount,
+                    plan = paymentPlanDataList,
+                    unplanned = paymentUnplannedData,
+                    test = paymentTestData,
+                )
         } catch (e: Exception) {
             setErrorState(e)
         }
@@ -118,7 +117,9 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * These field are optional to define.
      * @param textData is a simple text shown on the paylike dashboard
      * @param customData is a custom Json object defined by the user
-     * @see <a href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api Docs</a>
+     * @see <a
+     * href="https://github.com/paylike/api-reference/blob/main/payments/index.md#challengeresponse">Api
+     * Docs</a>
      */
     fun addPaymentAdditionalData(
         textData: String? = null,
@@ -127,11 +128,11 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         if (currentState == EngineState.ERROR) return
         try {
             isPaymentDataInitialized()
-        repository.paymentRepository =
-            repository.paymentRepository!!.copy(
-                text = textData,
-                custom = customData,
-            )
+            repository.paymentRepository =
+                repository.paymentRepository!!.copy(
+                    text = textData,
+                    custom = customData,
+                )
         } catch (e: Exception) {
             setErrorState(e)
         }
@@ -242,21 +243,17 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
     }
 
     /**
-     * Checks if the necessary data are all set
-     * These are:
-     * [PaylikeCardDto]
-     * [PaymentIntegrationDto]
+     * Checks if the necessary data are all set These are: [PaylikeCardDto] [PaymentIntegrationDto]
      * @throws [PaymentDataIsNotInitialized]
      */
     private fun isPaymentDataInitialized() {
         if (repository.paymentRepository == null) {
-            throw InvalidEngineStateException(
-                "Payment data is not initialized. "
-            )
+            throw InvalidEngineStateException("Payment data is not initialized. ")
         }
     }
 
-    /** Checks if we are in the valid state, if not throw exception
+    /**
+     * Checks if we are in the valid state, if not throw exception
      * @throws [InvalidEngineStateException]
      */
     private fun checkValidState(validState: EngineState, callerFun: String) {
@@ -272,8 +269,10 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * @throws [WrongAmountOfHintsException]
      */
     private fun isNumberOfHintsRight() {
-        if (repository.paymentRepository!!.hints.size != StatesMapToExpectedHintNumbers[currentState])
-        {
+        if (
+            repository.paymentRepository!!.hints.size !=
+                StatesMapToExpectedHintNumbers[currentState]
+        ) {
             throw WrongAmountOfHintsException(
                 StatesMapToExpectedHintNumbers[currentState]!!,
                 repository.paymentRepository!!.hints.size,
@@ -281,18 +280,14 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
     }
 
-    /**
-     * Concatenates newly received hints to the repository
-     */
+    /** Concatenates newly received hints to the repository */
     private fun addHintsToRepository(listToAdd: List<String>?) {
         repository.paymentRepository!!.hints =
-            repository.paymentRepository!!
-                .hints
-                .union(listToAdd ?: emptyList())
-                .toList()
+            repository.paymentRepository!!.hints.union(listToAdd ?: emptyList()).toList()
     }
 
-    /** Internal function to execute api call respecting [ApiMode] state
+    /**
+     * Internal function to execute api call respecting [ApiMode] state
      * @throws [InvalidPaymentDataException]
      */
     private suspend fun payment(): PaylikeClientResponse {
@@ -303,7 +298,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         }
         if (
             repository.paymentRepository?.integration == null ||
-            repository.paymentRepository?.card == null
+                repository.paymentRepository?.card == null
         ) {
             throw InvalidPaymentDataException("PaymentBody is not valid.")
         }

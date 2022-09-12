@@ -6,40 +6,35 @@ import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 
-private val DarkColorPalette = darkColors(
-    primary = PaylikeGreen,
-    primaryVariant = PaylikeGreen,
-    secondary = PaylikeGreen,
-    secondaryVariant = PaylikeGreen,
-    surface = PaylikeBlack,
-    background = PaylikeBlack,
-    error = PaylikeErrorRed,
-)
+private val DarkColorPalette =
+    darkColors(
+        primary = PaylikeGreen,
+        primaryVariant = PaylikeGreen,
+        secondary = PaylikeGreen,
+        secondaryVariant = PaylikeGreen,
+        surface = PaylikeBlack,
+        background = PaylikeBlack,
+        error = PaylikeErrorRed,
+    )
 
-private val LightColorPalette = lightColors(
-    primary = PaylikeGreen,
-    primaryVariant = PaylikeGreen,
-    secondary = PaylikeGreen,
-    secondaryVariant = PaylikeGreen,
-    surface = PaylikeWhite,
-    background = PaylikeWhite,
-    error = PaylikeErrorRed,
-)
+private val LightColorPalette =
+    lightColors(
+        primary = PaylikeGreen,
+        primaryVariant = PaylikeGreen,
+        secondary = PaylikeGreen,
+        secondaryVariant = PaylikeGreen,
+        surface = PaylikeWhite,
+        background = PaylikeWhite,
+        error = PaylikeErrorRed,
+    )
 
 @Composable
-fun PaylikeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colors = if (darkTheme) {
-        DarkColorPalette
-    } else {
-        LightColorPalette
-    }
-    MaterialTheme(
-        colors = colors,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+fun PaylikeTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val colors =
+        if (darkTheme) {
+            DarkColorPalette
+        } else {
+            LightColorPalette
+        }
+    MaterialTheme(colors = colors, typography = Typography, shapes = Shapes, content = content)
 }
