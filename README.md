@@ -3,6 +3,9 @@
 <a href="https://jitpack.io/#paylike/kotlin_engine" target="_blank">
     <img src="https://jitpack.io/v/paylike/kotlin_engine.svg" />
 </a>
+<a href="https://github.com/kocsislaci/kotlin_engine/actions/workflows/AssembleOnMain.yml" target="_blank">
+    <img src="https://github.com/kocsislaci/kotlin_engine/actions/workflows/AssembleOnMain.yml/badge.svg?branch=main" />
+</a>
 
 This library includes the core elements required to implement a payment flow towards the Paylike API.
 If you are looking for our high level component providing complete payment forms as well, [check here](https://github.com/paylike/kotlin_sdk).
