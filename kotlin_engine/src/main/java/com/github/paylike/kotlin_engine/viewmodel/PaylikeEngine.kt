@@ -6,6 +6,7 @@ import com.github.paylike.kotlin_client.domain.dto.payment.request.PaymentData
 import com.github.paylike.kotlin_client.domain.dto.payment.request.card.ExpiryDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.card.PaylikeCardDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.integration.PaymentIntegrationDto
+import com.github.paylike.kotlin_client.domain.dto.payment.request.money.PaymentAmount
 import com.github.paylike.kotlin_client.domain.dto.payment.request.plan.PaymentPlanDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
 import com.github.paylike.kotlin_client.domain.dto.payment.request.unplanned.PaymentUnplannedDto
@@ -17,7 +18,6 @@ import com.github.paylike.kotlin_engine.error.exceptions.*
 import com.github.paylike.kotlin_engine.model.repository.EngineRepository
 import com.github.paylike.kotlin_engine.model.service.ApiMode
 import com.github.paylike.kotlin_luhn.PaylikeLuhn
-import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.kotlin_request.exceptions.PaylikeException
 import java.util.*
 import java.util.function.Consumer

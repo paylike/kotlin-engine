@@ -14,9 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.github.paylike.kotlin_client.domain.dto.payment.request.money.PaymentAmount
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
 import com.github.paylike.kotlin_engine.view.PaylikeWebview
-import com.github.paylike.kotlin_money.PaymentAmount
 import com.github.paylike.sample.view.theme.PaylikeTheme
 import com.github.paylike.sample.viewmodel.SampleViewModel
 import kotlinx.coroutines.CoroutineScope
