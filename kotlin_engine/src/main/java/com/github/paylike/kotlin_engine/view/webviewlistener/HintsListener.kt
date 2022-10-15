@@ -6,11 +6,11 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 /**
- * Utility class to listen to the posted messages of the webview, catch the upcoming hints, reset
+ * Utility class to listen to the posted messages of the webView, catch the upcoming hints, reset
  * these hints if needed, and provide handler to save the hints to the engine.
  */
 class HintsListener(val handler: (hint: List<String>, isReady: Boolean) -> Unit) :
-    WebviewJsListener {
+    WebViewJsListener {
     private val hints: MutableList<String> = mutableListOf()
     fun resetHints() {
         hints.clear()

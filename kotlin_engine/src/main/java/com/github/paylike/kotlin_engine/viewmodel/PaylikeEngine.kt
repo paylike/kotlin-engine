@@ -244,11 +244,11 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /**
      * Checks if the necessary data are all set These are: [PaylikeCardDto] [PaymentIntegrationDto]
-     * @throws [PaymentDataIsNotInitialized]
+     * @throws [PaymentDataIsNotInitialised]
      */
     private fun isPaymentDataInitialized() {
         if (repository.paymentRepository == null) {
-            throw InvalidEngineStateException("Payment data is not initialized. ")
+            throw PaymentDataIsNotInitialised("Payment data is not initialized.")
         }
     }
 

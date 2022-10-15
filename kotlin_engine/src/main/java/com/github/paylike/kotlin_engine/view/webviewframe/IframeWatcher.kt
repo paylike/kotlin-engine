@@ -1,6 +1,6 @@
-package com.github.paylike.kotlin_engine.view.webviewlistener
+package com.github.paylike.kotlin_engine.view.webviewframe
 
-/** Utility const val to help the tds flow through the webview interactions. */
+/** Utility const val to help the tds flow through the webView interactions. */
 const val IframeWatcher: String =
     """
 <!DOCTYPE html>
@@ -36,7 +36,7 @@ const val IframeWatcher: String =
     <script>
         (function() {
                     function waitForWindowListener() {
-                        if (!PaylikeWebviewListener || !window.paylikeListener) {
+                        if (!PaylikeWebViewListener || !window.paylikeListener) {
                             setTimeout(waitForWindowListener, 100);
                             return;
                         }
@@ -55,10 +55,10 @@ const val IframeWatcher: String =
                 }
                 window.paylikeListener = function(event) {
                     if (event.data == "ready") {
-                        PaylikeWebviewListener.receiveMessage(event.data);
+                        PaylikeWebViewListener.receiveMessage(event.data);
                         return;
                     }
-                    PaylikeWebviewListener.receiveMessage(JSON.stringify(event.data));
+                    PaylikeWebViewListener.receiveMessage(JSON.stringify(event.data));
                 }
                 window.parent.addEventListener ('message', window.paylikeListener);
     </script>
