@@ -51,18 +51,18 @@ android {
 	kotlinOptions {
 		jvmTarget = '1.8'
 	}
-	packagingOptions {
-		exclude 'META-INF/DEPENDENCIES'
-		resources {
-			excludes += '/META-INF/{AL2.0,LGPL2.1}'
-		}
-	}
 	buildFeatures {
 		viewBinding true
 		compose true
 	}
 	composeOptions {
 		kotlinCompilerExtensionVersion compose_version
+	}
+	packagingOptions {
+		exclude 'META-INF/DEPENDENCIES'
+		resources {
+			excludes += '/META-INF/{AL2.0,LGPL2.1}'
+		}
 	}
 }
 
@@ -88,4 +88,4 @@ spotless {
 		endWithNewline()
 	}
 }
-build.dependsOn 'spotlessApply'
+assemble.dependsOn 'spotlessApply'

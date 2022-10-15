@@ -70,7 +70,7 @@ dependencies {
 	implementation 'androidx.webkit:webkit:1.5.0'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect:1.7.10'
 	api 'com.github.paylike:kotlin_luhn:1.0.6'
-	api 'com.github.paylike:kotlin_client:1.0.1'
+	api 'com.github.paylike:kotlin_client:1.0.2'
 }
 
 spotless {
@@ -87,7 +87,7 @@ spotless {
 		endWithNewline()
 	}
 }
-build.dependsOn 'spotlessApply'
+assemble.dependsOn 'spotlessApply'
 
 afterEvaluate {
 	publishing {
@@ -97,7 +97,7 @@ afterEvaluate {
 
 				groupId = 'com.github.paylike'
 				artifactId = 'kotlin_engine'
-				version = '1.0.1'
+				version = '1.0.2'
 			}
 		}
 	}
