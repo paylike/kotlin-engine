@@ -13,7 +13,7 @@ class EngineTest {
     fun tokenizeTest() {
         val engine = PaylikeEngine("testId01", ApiMode.TEST)
         runBlocking {
-            engine.initializePaymentData("4012111111111111", "111", 11, 2023)
+            engine.addEssentialPaymentData("4012111111111111", "111", 11, 2023)
             assertTrue(engine.repository.paymentRepository!!.card.number.token.isNotEmpty())
             assertEquals(
                 TokenizedResponse::class.java,

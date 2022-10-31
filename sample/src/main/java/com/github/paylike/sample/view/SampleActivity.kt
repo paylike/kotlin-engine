@@ -123,17 +123,28 @@ fun PayButton(
         Button(
             onClick = {
                 CoroutineScope(Dispatchers.IO).launch {
-                    viewModel.paylikeEngine.initializePaymentData(
+                    viewModel.paylikeEngine.addEssentialPaymentData(
                         "4012111111111111",
                         "111",
                         11,
                         2023
                     )
-                    viewModel.paylikeEngine.addPaymentDescriptionData(
+                    viewModel.paylikeEngine.addDescriptionPaymentData(
                         paymentAmount = PaymentAmount("EUR", 1, 0),
-                        paymentTestData = PaymentTestDto()
+                        paymentTestData =
+                            PaymentTestDto(
+                                /**
+                                 * If you want to test an error case you can add it through the
+                                 * [PaymentTestDto]
+                                 */
+                                //                                card =
+                                //                                    TestCardDto(
+                                //                                        code =
+                                // CardCodeOptions.INVALID,
+                                //                                    )
+                                )
                     )
-                    viewModel.paylikeEngine.addPaymentAdditionalData(
+                    viewModel.paylikeEngine.addAdditionalPaymentData(
                         textData = "Hello from android client"
                     )
                     viewModel.paylikeEngine.startPayment()
