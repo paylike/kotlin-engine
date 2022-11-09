@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.paylike.kotlin_client.domain.dto.payment.request.money.PaymentAmount
 import com.github.paylike.kotlin_client.domain.dto.payment.request.test.PaymentTestDto
-import com.github.paylike.kotlin_engine.view.PaylikeWebview
+import com.github.paylike.kotlin_engine.view.PaylikeWebView
 import com.github.paylike.sample.view.theme.PaylikeTheme
 import com.github.paylike.sample.viewmodel.SampleViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -51,7 +51,7 @@ fun SampleComposable(viewModel: SampleViewModel) {
         val uiState = remember { viewModel.uiState }
 
         /** Remembering the webview state */
-        val webview = remember { mutableStateOf(PaylikeWebview(viewModel.paylikeEngine)) }
+        val webView = remember { mutableStateOf(PaylikeWebView(viewModel.paylikeEngine)) }
 
         /** Scaffold frame */
         Scaffold(
@@ -81,7 +81,7 @@ fun SampleComposable(viewModel: SampleViewModel) {
                     /**
                      * Arranges the UI elements of the sample application. 1st: textField showing
                      * the actual number of hints saved, 2nd: textField showing the transactionId if
-                     * any, 3rd: the webview managing the the TDS flow, it"s render is set
+                     * any, 3rd: the webview managing the the TDS flow, it's render is set
                      * internally, 4th: [PayButton] initializing a hardwired simple payment flow,
                      * 5th: [ResetButton] resetting the engine to be able to reinitialise the
                      * payment flow.
@@ -101,7 +101,7 @@ fun SampleComposable(viewModel: SampleViewModel) {
                             text = uiState.transactionId.value,
                             textAlign = TextAlign.Center,
                         )
-                        webview.value.WebviewComposable(
+                        webView.value.WebViewComposable(
                             modifier = Modifier.fillMaxWidth(1f).height(300.dp)
                         )
                         PayButton(viewModel, uiState.shouldRenderPayButton.value)
@@ -123,17 +123,28 @@ fun PayButton(
         Button(
             onClick = {
                 CoroutineScope(Dispatchers.IO).launch {
-                    viewModel.paylikeEngine.initializePaymentData(
+                    viewModel.paylikeEngine.addEssentialPaymentData(
                         "4012111111111111",
                         "111",
                         11,
                         2023
                     )
-                    viewModel.paylikeEngine.addPaymentDescriptionData(
+                    viewModel.paylikeEngine.addDescriptionPaymentData(
                         paymentAmount = PaymentAmount("EUR", 1, 0),
-                        paymentTestData = PaymentTestDto()
+                        paymentTestData =
+                            PaymentTestDto(
+                                /**
+                                 * If you want to test an error case you can add it through the
+                                 * [PaymentTestDto]
+                                 */
+                                //                                card =
+                                //                                    TestCardDto(
+                                //                                        code =
+                                // CardCodeOptions.INVALID,
+                                //                                    )
+                                )
                     )
-                    viewModel.paylikeEngine.addPaymentAdditionalData(
+                    viewModel.paylikeEngine.addAdditionalPaymentData(
                         textData = "Hello from android client"
                     )
                     viewModel.paylikeEngine.startPayment()

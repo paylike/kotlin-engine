@@ -18,9 +18,9 @@ import com.github.paylike.kotlin_engine.BuildConfig
 import com.github.paylike.kotlin_engine.error.exceptions.ReceivedWebViewErrorException
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObservableListened
 import com.github.paylike.kotlin_engine.error.exceptions.WrongTypeOfObserverUpdateArg
+import com.github.paylike.kotlin_engine.view.webviewframe.IframeWatcher
 import com.github.paylike.kotlin_engine.view.webviewframe.setIframeContent
 import com.github.paylike.kotlin_engine.view.webviewlistener.HintsListener
-import com.github.paylike.kotlin_engine.view.webviewlistener.IframeWatcher
 import com.github.paylike.kotlin_engine.viewmodel.EngineState
 import com.github.paylike.kotlin_engine.viewmodel.PaylikeEngine
 import java.util.*
@@ -29,16 +29,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
-/** Wrapper class for webview composable and its helper functions */
-class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
-    private var shouldRenderWebview: MutableState<Boolean> = mutableStateOf(false)
-    private lateinit var webview: WebView
+/** Wrapper class for webView composable and its helper functions */
+class PaylikeWebView(private val engine: PaylikeEngine) : Observer {
+    private var shouldRenderWebView: MutableState<Boolean> = mutableStateOf(false)
+    private lateinit var webView: WebView
 
-    /** Listens to the postMessages of the webview. */
-    private val webviewListener = HintsListener { hints, isReady ->
+    /** Listens to the postMessages of the webView. */
+    private val webViewListener = HintsListener { hints, isReady ->
         if (isReady) {
-            webview.post {
-                webview.evaluateJavascript(
+            webView.post {
+                webView.evaluateJavascript(
                     setIframeContent(to = engine.repository.htmlRepository ?: ""),
                     null
                 )
@@ -58,13 +58,13 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         }
     }
 
-    /** Initialize the webview class to listen to the engine we provided during instantiation */
+    /** Initialize the webView class to listen to the engine we provided during instantiation */
     init {
         engine.addObserver(this)
     }
 
     /**
-     * Observer update function overload Sets the visibility and content of the [WebviewComposable]
+     * Observer update function overload Sets the visibility and content of the [WebViewComposable]
      * based on the provided [EngineState]
      */
     override fun update(o: Observable?, arg: Any?) {
@@ -84,15 +84,15 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
         }
         when (arg) {
             EngineState.WAITING_FOR_INPUT -> {
-                webviewListener.resetHints()
+                webViewListener.resetHints()
             }
             EngineState.WEBVIEW_CHALLENGE_STARTED -> {
-                shouldRenderWebview.value = true
+                shouldRenderWebView.value = true
             }
             EngineState.WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED -> {
                 MainScope().launch {
-                    webview.post {
-                        webview.evaluateJavascript(
+                    webView.post {
+                        webView.evaluateJavascript(
                             setIframeContent(to = engine.repository.htmlRepository ?: ""),
                             null
                         )
@@ -100,23 +100,23 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                 }
             }
             EngineState.SUCCESS -> {
-                shouldRenderWebview.value = false
+                shouldRenderWebView.value = false
             }
             EngineState.ERROR -> {
-                shouldRenderWebview.value = false
+                shouldRenderWebView.value = false
             }
         }
     }
 
-    /** Webview composable function to execute the tds flow */
+    /** WebView composable function to execute the tds flow */
     @SuppressLint("SetJavaScriptEnabled")
     @Composable
-    fun WebviewComposable(modifier: Modifier = Modifier) {
-        if (shouldRenderWebview.value) {
+    fun WebViewComposable(modifier: Modifier = Modifier) {
+        if (shouldRenderWebView.value) {
             AndroidView(
                 modifier = modifier,
                 factory = {
-                    webview =
+                    webView =
                         WebView(it).apply {
                             layoutParams =
                                 ViewGroup.LayoutParams(
@@ -138,7 +138,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                                         }
                                     }
                                 }
-                            this.addJavascriptInterface(webviewListener, "PaylikeWebviewListener")
+                            this.addJavascriptInterface(webViewListener, "PaylikeWebViewListener")
                             loadDataWithBaseURL(
                                 "https:///b.paylike.io",
                                 IframeWatcher,
@@ -153,7 +153,7 @@ class PaylikeWebview(private val engine: PaylikeEngine) : Observer {
                                 WebView.setWebContentsDebuggingEnabled(true)
                             }
                         }
-                    webview
+                    webView
                 }
             )
         } else {
