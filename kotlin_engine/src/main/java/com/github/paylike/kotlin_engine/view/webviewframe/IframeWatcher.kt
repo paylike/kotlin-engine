@@ -31,7 +31,7 @@ const val IframeWatcher: String =
 <body>
     <div id="iframe-div">
         <iframe id="tdsiframe">
-    </iframe>
+        </iframe>
     </div>
     <script>
         (function() {
@@ -40,7 +40,7 @@ const val IframeWatcher: String =
                             setTimeout(waitForWindowListener, 100);
                             return;
                         }
-                        window.postMessage("ready");
+                        window.postMessage("ready", "https://b.paylike.io/");
                     }
                     waitForWindowListener();
                 })();
