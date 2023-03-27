@@ -3,8 +3,8 @@
 <a href="https://jitpack.io/#paylike/kotlin_engine" target="_blank">
     <img src="https://jitpack.io/v/paylike/kotlin_engine.svg" />
 </a>
-<a href="https://github.com/kocsislaci/kotlin_engine/actions/workflows/AssembleOnMain.yml" target="_blank">
-    <img src="https://github.com/kocsislaci/kotlin_engine/actions/workflows/AssembleOnMain.yml/badge.svg?branch=main" />
+<a href="/../../actions/workflows/AssembleOnMain.yml" target="_blank">
+    <img src="/../../actions/workflows/AssembleOnMain.yml/badge.svg?branch=main" />
 </a>
 
 This library includes the core elements required to implement a payment flow towards the Paylike API.
@@ -12,7 +12,7 @@ If you are looking for our high level component providing complete payment forms
 
 ## Table of contents
 * [API Reference](#api-reference)
-* [PaylikeWebview](#paylikeWebview) (Webview composable)
+* [PaylikeWebView](#paylikeWebView) (WebView composable)
     * [Modifier](#modifier)
     * [Understanding TDS](#understanding-tds)
 * [PaylikeEngine](#paylikeengine) (Underlying business logic service)
@@ -22,35 +22,35 @@ If you are looking for our high level component providing complete payment forms
 ## API Reference
 
 For the library you can find the API reference [here](https://paylike.io#todo-link).
-To get more familiar with our server API you can find here the [official documentation](https:/github.com/paylike/api-reference).
+To get more familiar with our server API you can find here the [official documentation](https://github.com/paylike/api-reference).
 
-## PaylikeWebview
+## PaylikeWebView
 
-Webview component of the payment flow, able to render the webview required to execute the TDS challenge.
+WebView component of the payment flow, able to render the webView required to execute the TDS challenge.
 
 ```kotlin
-val paylikeWebview = PaylikeWebview(/*...*/)
+val paylikeWebView = PaylikeWebView(/*...*/)
 
 //...
 
 // @Composable context
-paylikeWebview.WebviewComposable()
+paylikeWebView.WebViewComposable()
 ```
 For a realistic usage check out the sample [here](./sample/src/main/java/com/github/paylike/sample).
 
 ### Modifier
 
-The webview composable has optional Modifier parameter. The underlying AndroidView composable directly gets this Modifier.
+The webView composable has optional Modifier parameter. The underlying AndroidView composable directly gets this Modifier.
 
 Example usage:
 
 ```kotlin
-val paylikeWebview = PaylikeWebview(/*...*/)
+val paylikeWebView = PaylikeWebView(/*...*/)
 
 //...
 
 // @Composable context
-paylikeWebview.WebviewComposable(
+paylikeWebView.WebViewComposable(
   modifier = Modifier.fillMaxWidth(1f).height(300.dp) // Optional arbitrary modifier
 )
 ```
@@ -74,8 +74,8 @@ val paylikeEngine = PaylikeEngine(
 )
 
 /**
- * After the startPayment() function the engine updates it's state to render TDS webview challenge.
- * A PaylikeWebview instance is required to listen to the states of the engine,
+ * After the startPayment() function the engine updates it's state to render TDS webView challenge.
+ * A PaylikeWebView instance is required to listen to the states of the engine,
  * so it can help teh TDS challenge flow.
  */
 CoroutineScope(Dispatchers.IO).launch {
@@ -101,7 +101,7 @@ CoroutineScope(Dispatchers.IO).launch {
 The library exposes an enum called EngineState which describes the following states:
 
 * `WAITING_FOR_INPUT` - Indicates that the engine is ready to be used and waiting for input
-* `WEBVIEW_CHALLENGE_STARTED` -  Indicates that a webview challenge is required to complete the TDS flow, this is the first state when the webview has to be rendered
+* `WEBVIEW_CHALLENGE_STARTED` -  Indicates that a webView challenge is required to complete the TDS flow, this is the first state when the webView has to be rendered
 * `WEBVIEW_CHALLENGE_USER_INPUT_REQUIRED` - Indicates that the first step of the TDS flow is done and the challenge needs interraction from the end user to resolve
 * `SUCCESS` - Indicates that all challenges are done successfully and the payment is being processed
 * `ERROR` - Happens when the flow could not be completed successfully
