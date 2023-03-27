@@ -149,6 +149,7 @@ class PaylikeWebView(private val engine: PaylikeEngine) : Observer {
 
                             settings.javaScriptEnabled = true
                             settings.allowContentAccess = true
+                            this.isVerticalScrollBarEnabled = true
                             if (BuildConfig.DEBUG) {
                                 WebView.setWebContentsDebuggingEnabled(true)
                             }
