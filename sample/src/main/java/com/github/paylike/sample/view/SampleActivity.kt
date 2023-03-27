@@ -102,7 +102,7 @@ fun SampleComposable(viewModel: SampleViewModel) {
                             textAlign = TextAlign.Center,
                         )
                         webView.value.WebViewComposable(
-                            modifier = Modifier.fillMaxWidth(1f).height(300.dp)
+                            modifier = Modifier.fillMaxWidth(1f).fillMaxHeight(0.9f)
                         )
                         PayButton(viewModel, uiState.shouldRenderPayButton.value)
                         ResetButton(viewModel, uiState.shouldRenderResetButton.value)
@@ -135,13 +135,16 @@ fun PayButton(
                             PaymentTestDto(
                                 /**
                                  * If you want to test an error case you can add it through the
-                                 * [PaymentTestDto]
+                                 * [PaymentTestDto] e.g. PaymentTestDto(
+                                 * ```
+                                 *      card =
+                                 *      TestCardDto(
+                                 *          code =
+                                 *          CardCodeOptions.INVALID,
+                                 *      )
+                                 * ```
+                                 * )
                                  */
-                                //                                card =
-                                //                                    TestCardDto(
-                                //                                        code =
-                                // CardCodeOptions.INVALID,
-                                //                                    )
                                 )
                     )
                     viewModel.paylikeEngine.addAdditionalPaymentData(
