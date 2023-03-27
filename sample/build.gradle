@@ -88,4 +88,4 @@ spotless {
 		endWithNewline()
 	}
 }
-assemble.dependsOn 'spotlessApply'
+build.dependsOn 'spotlessCheck'
