@@ -67,6 +67,7 @@ class PaylikeWebView(private val engine: PaylikeEngine) : Observer {
      * Observer update function overload Sets the visibility and content of the [WebViewComposable]
      * based on the provided [EngineState]
      */
+    @Deprecated("Deprecated in Java")
     override fun update(o: Observable?, arg: Any?) {
         if (o !is PaylikeEngine) {
             throw WrongTypeOfObservableListened(

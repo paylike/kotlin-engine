@@ -398,6 +398,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         this.notifyObservers(currentState)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun notifyObservers(arg: Any?) {
         this.setChanged()
         super.notifyObservers(arg)
