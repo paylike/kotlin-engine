@@ -14,18 +14,18 @@ class EngineTest {
         val engine = PaylikeEngine("testId01", ApiMode.TEST)
         runBlocking {
             engine.addEssentialPaymentData("4012111111111111", "111", 11, 2023)
-            assertTrue(engine.repository.paymentRepository!!.card.number.token.isNotEmpty())
+            assertTrue(engine.repository.paymentRepository!!.card!!.number.token.isNotEmpty())
             assertEquals(
                 TokenizedResponse::class.java,
-                engine.repository.paymentRepository!!.card.number::class.java
+                engine.repository.paymentRepository!!.card!!.number::class.java
             )
-            assertTrue(engine.repository.paymentRepository!!.card.cvc.token.isNotEmpty())
+            assertTrue(engine.repository.paymentRepository!!.card!!.cvc.token.isNotEmpty())
             assertEquals(
                 TokenizedResponse::class.java,
-                engine.repository.paymentRepository!!.card.cvc::class.java
+                engine.repository.paymentRepository!!.card!!.cvc::class.java
             )
-            assertEquals(11, engine.repository.paymentRepository!!.card.expiry.month)
-            assertEquals(2023, engine.repository.paymentRepository!!.card.expiry.year)
+            assertEquals(11, engine.repository.paymentRepository!!.card!!.expiry.month)
+            assertEquals(2023, engine.repository.paymentRepository!!.card!!.expiry.year)
         }
     }
 }
