@@ -21,7 +21,7 @@ class SampleViewModel : ViewModel(), Observer {
      */
     val paylikeEngine: PaylikeEngine =
         PaylikeEngine(
-            merchantId = BuildConfig.PaylikeMerchantApiKey,
+            merchantId = BuildConfig.PAYLIKE_MERCHANT_API_KEY,
             apiMode = ApiMode.TEST,
         )
 

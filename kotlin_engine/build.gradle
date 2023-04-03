@@ -16,28 +16,7 @@ android {
 		}
 	}
 	buildTypes {
-		def localProperties = new Properties()
-		debug {
-			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
-			buildConfigField(
-					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
-					: 'new String()'
-					)
-					)
-		}
 		release {
-			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
-			buildConfigField(
-					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
-					: 'new String()'
-					)
-					)
 			minifyEnabled false
 		}
 	}

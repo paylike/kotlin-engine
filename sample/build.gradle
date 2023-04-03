@@ -23,9 +23,9 @@ android {
 			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
 			buildConfigField(
 					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
+					'PAYLIKE_MERCHANT_API_KEY',
+					(localProperties.containsKey('PAYLIKE_MERCHANT_API_KEY')
+					? localProperties.getProperty('PAYLIKE_MERCHANT_API_KEY')
 					: 'new String()'
 					)
 					)
@@ -34,9 +34,9 @@ android {
 			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
 			buildConfigField(
 					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
+					'PAYLIKE_MERCHANT_API_KEY',
+					(localProperties.containsKey('PAYLIKE_MERCHANT_API_KEY')
+					? localProperties.getProperty('PAYLIKE_MERCHANT_API_KEY')
 					: 'new String()'
 					)
 					)
