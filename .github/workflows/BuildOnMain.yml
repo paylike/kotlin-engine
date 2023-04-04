@@ -1,4 +1,4 @@
-name: AssembleOnMain
+name: Build
 
 on:
   push:
@@ -22,9 +22,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Get secret and add to freshly created local.properties
-        env:
-          API_KEY: ${{secrets.PAYLIKE_MERCHANT_API_KEY}}
-        run: |
-          echo "PAYLIKE_MERCHANT_API_KEY=\"$API_KEY\"" >> local.properties
+        run: echo "PAYLIKE_MERCHANT_API_KEY=\"${{secrets.PAYLIKE_MERCHANT_API_KEY}}\"" >> local.properties
       - name: Build APK
         run: ./gradlew build
