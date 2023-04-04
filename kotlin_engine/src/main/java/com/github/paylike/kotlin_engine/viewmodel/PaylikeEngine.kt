@@ -50,7 +50,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
      * Docs</a>
      */
     suspend fun addEssentialPaymentData(cardNumber: String, cvc: String, month: Int, year: Int) {
-        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -100,7 +99,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         paymentUnplannedData: PaymentUnplannedDto? = null,
         paymentTestData: PaymentTestDto? = null,
     ) {
-        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -131,7 +129,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         textData: String? = null,
         customData: JsonObject? = null,
     ) {
-        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -150,7 +147,6 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
 
     /** Start function for a payment flow */
     suspend fun startPayment() {
-        if (currentState == EngineState.ERROR) return
         try {
             checkValidState(
                 validState = EngineState.WAITING_FOR_INPUT,
@@ -402,6 +398,7 @@ class PaylikeEngine(private val merchantId: String, private val apiMode: ApiMode
         this.notifyObservers(currentState)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun notifyObservers(arg: Any?) {
         this.setChanged()
         super.notifyObservers(arg)

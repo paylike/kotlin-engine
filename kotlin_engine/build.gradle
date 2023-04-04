@@ -1,45 +1,22 @@
 plugins {
 	id 'com.android.library'
 	id 'org.jetbrains.kotlin.android'
-	id 'org.jetbrains.kotlin.plugin.serialization' version '1.5.30'
+	id 'org.jetbrains.kotlin.plugin.serialization' version '1.8.10'
 	id 'maven-publish'
 	id 'com.diffplug.spotless' version '6.8.0'
 }
 
-def compose_version  = '1.2.0'
-
 android {
-	compileSdk 32
+	compileSdk 33
 	defaultConfig {
 		minSdk 26
-		targetSdk 32
+		targetSdk 33
 		vectorDrawables {
 			useSupportLibrary true
 		}
 	}
 	buildTypes {
-		def localProperties = new Properties()
-		debug {
-			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
-			buildConfigField(
-					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
-					: 'new String()'
-					)
-					)
-		}
 		release {
-			localProperties.load(new FileInputStream(rootProject.file('local.properties')))
-			buildConfigField(
-					'String',
-					'PaylikeMerchantApiKey',
-					(localProperties.containsKey('PaylikeMerchantApiKey')
-					? localProperties.getProperty('PaylikeMerchantApiKey')
-					: 'new String()'
-					)
-					)
 			minifyEnabled false
 		}
 	}
@@ -54,7 +31,7 @@ android {
 		compose true
 	}
 	composeOptions {
-		kotlinCompilerExtensionVersion compose_version
+		kotlinCompilerExtensionVersion '1.4.4'
 	}
 	packagingOptions {
 		resources {
@@ -65,12 +42,12 @@ android {
 
 dependencies {
 	testImplementation 'junit:junit:4.13.2'
-	implementation "androidx.compose.ui:ui:$compose_version"
-	implementation "androidx.compose.material:material:$compose_version"
-	implementation 'androidx.webkit:webkit:1.5.0'
+	implementation 'androidx.compose.ui:ui:1.4.0'
+	implementation 'androidx.compose.material:material:1.4.0'
+	implementation 'androidx.webkit:webkit:1.6.1'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect:1.7.10'
-	api 'com.github.paylike:kotlin_luhn:1.0.6'
-	api 'com.github.paylike:kotlin_client:1.0.2'
+	api 'com.github.paylike:kotlin_luhn:1.0.7'
+	api 'com.github.paylike:kotlin_client:1.0.3'
 }
 
 spotless {
@@ -87,7 +64,7 @@ spotless {
 		endWithNewline()
 	}
 }
-assemble.dependsOn 'spotlessApply'
+build.dependsOn 'spotlessCheck'
 
 afterEvaluate {
 	publishing {
@@ -97,7 +74,7 @@ afterEvaluate {
 
 				groupId = 'com.github.paylike'
 				artifactId = 'kotlin_engine'
-				version = '1.0.3'
+				version = '1.0.4'
 			}
 		}
 	}

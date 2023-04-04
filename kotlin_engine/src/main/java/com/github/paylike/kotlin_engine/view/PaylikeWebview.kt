@@ -67,6 +67,7 @@ class PaylikeWebView(private val engine: PaylikeEngine) : Observer {
      * Observer update function overload Sets the visibility and content of the [WebViewComposable]
      * based on the provided [EngineState]
      */
+    @Deprecated("Deprecated in Java")
     override fun update(o: Observable?, arg: Any?) {
         if (o !is PaylikeEngine) {
             throw WrongTypeOfObservableListened(
@@ -149,6 +150,7 @@ class PaylikeWebView(private val engine: PaylikeEngine) : Observer {
 
                             settings.javaScriptEnabled = true
                             settings.allowContentAccess = true
+                            this.isVerticalScrollBarEnabled = true
                             if (BuildConfig.DEBUG) {
                                 WebView.setWebContentsDebuggingEnabled(true)
                             }

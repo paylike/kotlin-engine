@@ -21,7 +21,7 @@ class SampleViewModel : ViewModel(), Observer {
      */
     val paylikeEngine: PaylikeEngine =
         PaylikeEngine(
-            merchantId = BuildConfig.PaylikeMerchantApiKey,
+            merchantId = BuildConfig.PAYLIKE_MERCHANT_API_KEY,
             apiMode = ApiMode.TEST,
         )
 
@@ -46,6 +46,7 @@ class SampleViewModel : ViewModel(), Observer {
         (state == EngineState.SUCCESS || state == EngineState.ERROR)
 
     /** Observer update function overload. Sets the necessary state variables for the UI logic. */
+    @Deprecated("Deprecated in Java")
     override fun update(o: Observable?, arg: Any?) {
         if (o !is PaylikeEngine) {
             throw WrongTypeOfObservableListened(
